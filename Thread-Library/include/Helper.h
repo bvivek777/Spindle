@@ -1,8 +1,7 @@
 #ifndef __HELPER__
 #define __HELPER__
 
-class Helper
-{
+class Helper {
 private:
     /* data */
 public:
