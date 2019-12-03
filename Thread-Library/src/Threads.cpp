@@ -1,15 +1,9 @@
-#include "Threads.h"
+#include "Thread.h"
 
-Threads::Threads(/* args */) {
-    maxThreads = std::thread::hardware_concurrency();
+Thread::Thread(/* args */) {
+    
 }
 
-Threads::~Threads() {
-    delete threads;
-}
-
-Threads* Threads::getInstance() {
-    if ( threads )
-        threads = new Threads;
-    return threads;
+Thread::~Thread() {
+    //delete thread here
 }

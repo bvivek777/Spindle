@@ -6,31 +6,36 @@
 #include <atomic>
 #include "TsQueue.h"
 #include "Config.h"
+#include <memory>
 #include <functional>
 
 /*
  * Create a constant set of states possible for the threads to be in
  */
 enum ThreadState { INIT, STOPPED, RUNNING, FINISHED };
+enum ScheduleType { RR, FCFS };
 /* 
  * Class to create and manage the execution of a thread
  * Since the threads created will be governed by the Learning Application
  * This class will only manage the execution of a single thread with multiple
  * functions to be run in parallel 
  */
-class Threads {
+class Thread {
 private:
-    static int maxThreads;
-    static Threads *threads;   
+    //static int maxThreads;
+   // static Threads *threads;   
     std::atomic<ThreadState> a {INIT};
     TsQueue<std::function<void(int function)>*> processPool;
-    /* TsQueue<Threads> threadPool; */    
-    Threads(/* args */);
-public:
-    ~Threads();
-    static Threads *getInstance();
+    std::unique_ptr<std::thread> thread;
+    std::shared_ptr<std::atomic<bool>> flag;
+public:    
+    Thread(/* args */);
+    ~Thread();
     int create();
-    int addMoreThreads();
+    int addProcess();
+    void setFlag();
+    void getExecutionState();
+
 };
-Threads *Threads::threads = 0;
+//Threads *Threads::threads = 0;
 #endif

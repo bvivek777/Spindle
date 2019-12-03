@@ -1,9 +1,14 @@
 #include "PoolManager.h"
 
 PoolManager::PoolManager(/* args */) {
-    threads = threads->getInstance();
+    maxThreads = std::thread::hardware_concurrency();
 }
 
-PoolManager::~PoolManager()
-{
+PoolManager::~PoolManager() {
+}
+
+PoolManager* PoolManager::getInstance(){
+    if ( !poolManager )
+        poolManager = new PoolManager;
+    return poolManager; 
 }
