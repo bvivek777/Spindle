@@ -1,9 +1,15 @@
-#include "Thread.h"
+#include "Threads.h"
 
-Thread::Thread(/* args */) {
+Threads::Threads(/* args */) {
     
 }
 
-Thread::~Thread() {
+Threads::~Threads() {
     //delete thread here
+}
+
+template<typename T>
+bool Threads::addProcess(T* funcPtr)
+{
+    
 }
