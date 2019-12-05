@@ -1,21 +1,20 @@
 #include "PoolManager.h"
 
 PoolManager::PoolManager(/* args */) {
-    //maxThreads = std::thread::hardware_concurrency();
-    threadsPtr = std::make_unique<Threads>();
+    //@TODO determine the number of threads to create using the data from ML.
+    //Creating 3 threads for now.
+    for(int i = 0; i < 3; i++)
+    {
+        //Thread 
+    }
 }
 
 PoolManager::~PoolManager() {
-}
-
-PoolManager* PoolManager::getInstance(){
-    if ( !poolManager )
-        poolManager = new PoolManager;
-    return poolManager; 
+    //delete thread here
 }
 
 template<typename T>
-bool PoolManager::AddProcess(T* funcPtr)
+bool PoolManager::addProcess(T* funcPtr)
 {
-    return threadsPtr->addProcess(funcPtr);
+    // based on the ML values assign this function to a thread in the Map
 }

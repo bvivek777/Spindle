@@ -3,7 +3,7 @@
 Thread::Thread()
 {
     thread = std::thread();
-    tid = thread.get_id;
+    tid = thread.get_id();
 }
 
 template<typename T>
