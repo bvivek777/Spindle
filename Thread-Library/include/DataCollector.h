@@ -1,13 +1,15 @@
 #ifndef __DATA_COLLECTOR__
 #define __DATA_COLLECTOR__
 
-class DataCollector
-{
+#include <mutex>
+#include <fstream>
+
+class DataCollector {
 private:
-    /* data */
+    std::mutex lock;
+    std::ofstream file;    
+    DataCollector();
 public:
-    DataCollector(/* args */);
     ~DataCollector();
 };
-
 #endif

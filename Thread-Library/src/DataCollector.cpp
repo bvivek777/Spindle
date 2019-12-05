@@ -1,9 +1,7 @@
 #include "DataCollector.h"
 
-DataCollector::DataCollector(/* args */)
-{
+DataCollector::DataCollector(/* args */) {
 }
 
-DataCollector::~DataCollector()
-{
+DataCollector::~DataCollector() {
 }
