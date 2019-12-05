@@ -1,19 +1,22 @@
 #ifndef __POOL_MANAGER__
 #define __POOL_MANAGER__
 
-#include "Thread.h"
+#include "Threads.h"
 
 
 class PoolManager {
 private:
     int maxThreads;
-    static std::atomic<std::vector<Thread>> threadPool; 
+    std::unique_ptr<Threads> threadsPtr;
+    static std::atomic<std::vector<Threads>> threadPool; 
     static PoolManager* poolManager;  
     PoolManager(/* args */);
 public:
     ~PoolManager();
     static PoolManager* getInstance();
+    template<typename T>
+    bool AddProcess(T* funcPtr);
 };
 
-PoolManager *PoolManager::poolManager = 0;
+PoolManager *PoolManager::poolManager = nullptr;
 #endif
