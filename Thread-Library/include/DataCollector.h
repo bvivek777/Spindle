@@ -4,6 +4,7 @@
 #include <mutex>
 #include <fstream>
 #include <stdio.h>
+#include <PoolManager.h>
 
 class DataCollector {
 private:
