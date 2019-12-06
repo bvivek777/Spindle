@@ -3,6 +3,7 @@
 
 #include <mutex>
 #include <fstream>
+#include <stdio.h>
 
 class DataCollector {
 private:
@@ -11,5 +12,6 @@ private:
     DataCollector();
 public:
     ~DataCollector();
+    bool write();
 };
 #endif
