@@ -49,3 +49,10 @@ int TsQueue<T>::size(){
     auto lock = std::unique_lock<std::mutex>(this.lock);
     return pendingQueue.size();
 }
+
+template<typename T>
+bool TsQueue<T>::empty()
+{
+    auto lock = std::unique_lock<std::mutex>(this.lock);
+    return pendingQueue.empty();
+}

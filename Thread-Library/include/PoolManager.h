@@ -22,6 +22,8 @@ enum class MapKey
     WRITE,
     IO
 };
+
+typedef std::shared_ptr<Thread> threadPtr;
 /* 
  * Class to create and manage the execution of a thread
  * Since the threads created will be governed by the Learning Application
@@ -37,9 +39,8 @@ private:
 
     // @ToDo create the key of this map based on some unique value which
     // will be decided based on the type of operations the thread performs.
-    std::unordered_map<MapKey, Thread> idThreadMap;
+    std::unordered_map<MapKey, threadPtr> idThreadMap;
 
-    std::unique_ptr<std::thread> thread;
     std::shared_ptr<std::atomic<bool>> flag;
 public:    
     PoolManager(/* args */);

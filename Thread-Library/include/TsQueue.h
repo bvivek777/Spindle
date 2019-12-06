@@ -47,6 +47,7 @@ public:
      */
     int size();
 
+    bool empty();
 
     /* Deallocates and clears the queue */
     ~TsQueue<T>();
