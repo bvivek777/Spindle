@@ -3,10 +3,9 @@
 PoolManager::PoolManager(/* args */) {
     //@TODO determine the number of threads to create using the data from ML.
     //Creating 3 threads for now.
-    for(int i = 0; i < 3; i++)
-    {
-        //Thread 
-    }
+    idThreadMap[MapKey::READ] = std::make_shared<Thread>();
+    idThreadMap[MapKey::IO] = std::make_shared<Thread>();
+    idThreadMap[MapKey::WRITE] = std::make_shared<Thread>();
 }
 
 PoolManager::~PoolManager() {
