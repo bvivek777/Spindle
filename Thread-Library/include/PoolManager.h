@@ -16,13 +16,6 @@
 enum ThreadState { INIT, STOPPED, RUNNING, FINISHED };
 enum ScheduleType { RR, FCFS };
 
-enum class MapKey
-{
-    READ,
-    WRITE,
-    IO
-};
-
 typedef std::shared_ptr<Thread> threadPtr;
 /* 
  * Class to create and manage the execution of a thread
@@ -39,8 +32,8 @@ private:
 
     // @ToDo create the key of this map based on some unique value which
     // will be decided based on the type of operations the thread performs.
-    std::unordered_map<MapKey, threadPtr> idThreadMap;
-
+    std::unordered_map<int, threadPtr> idThreadMap;
+    int activeThreads;
     std::shared_ptr<std::atomic<bool>> flag;
 public:    
     PoolManager(/* args */);

@@ -19,4 +19,5 @@ class Thread
         template<typename T>
         bool AddToQueue(T* funcPtr);
         void ProcessAssignedWork();
+        
 };
