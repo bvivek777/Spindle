@@ -1,54 +1,20 @@
 #include "Spindle.h"
 
-template <typename T>
-Spindle<T>::Spindle(T* funcPtr, int n)
-            : funcPtr(funcPtr)
-            , num_Threads(n)
-{
-    for(int i = 0; i< num_Threads; i++)
-        workerThreads.push_back(std::thread(&funcPtr));
+Spindle::Spindle(/* args */) {
+    threadPoolPtr = std::make_unique<PoolManager>();
 }
 
-template <typename T>
-Spindle<T>::~Spindle()
-{
-    for(auto thread : workerThreads)
-    {
-        if(thread.joinable())
-            thread.join();
-    }
+Spindle::~Spindle() {
 }
 
-template <typename T>
-bool Spindle<T>::Add(T* funcPtr)
-{
-    try
-    {
-        workerThreads.push_back(std::thread(&funcPtr));
-        return true;
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-        return false;
-    }
-    
+Spindle* Spindle::getInstance(){
+    if ( !spindle )
+        spindle = new Spindle;
+    return spindle; 
 }
 
-template <typename T>
-bool Spindle<T>::Add_n_Threads(T* funcPtr, int n)
+template<typename T>
+bool Spindle::AddProcess(T* funcPtr)
 {
-    try
-    {
-        for(int i = 0; i < n; i++)
-        {
-            workerThreads.push_back(std::thread(&funcPtr));
-        }
-        return true;
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-        return false;
-    }
+    return threadPoolPtr->addProcess(funcPtr);
 }
