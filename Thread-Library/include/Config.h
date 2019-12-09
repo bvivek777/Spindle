@@ -17,9 +17,11 @@ private:
     RUN_MODE runMode;
     THREAD_MODE threadMode; 
     ~Config();
+    Config();
     Config(RUN_MODE rm, THREAD_MODE tm);
 public:
     static Config& getInstance(RUN_MODE rm, THREAD_MODE tm);
+    static Config& getInstance();
     bool setRunningMode(RUN_MODE rm);
     bool setThreadMode(THREAD_MODE tm);
     RUN_MODE getRunningMode();

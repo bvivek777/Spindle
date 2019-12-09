@@ -37,14 +37,14 @@ private:
     ~Spindle();
         
     bool createThreads(int threadCount);
+    bool assignProcesses();
 
 public:
 
-    template<typename T>
-    bool addProcess(T* functPtr);
+    bool init(int threads);
 
     template<typename T>
-    bool addProcess(T* functPtr,int threadCount);
+    bool addProcess(T* functPtr);
 
     static Spindle& getInstance(Config* configuration);
     void setFlag();

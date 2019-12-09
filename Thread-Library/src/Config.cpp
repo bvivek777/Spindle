@@ -30,3 +30,8 @@ Config& Config::getInstance(RUN_MODE rm, THREAD_MODE tm){
     static Config config(rm, tm);
     return config;
 }
+
+Config& Config::getInstance(){
+    static Config config;
+    return config;
+}

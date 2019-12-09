@@ -2,6 +2,7 @@
 
 Spindle::Spindle(Config* configuration = nullptr) {
     hwThreads = std::thread::hardware_concurrency();
+    currentThreads = 0;
 }
 
 Spindle::~Spindle() {
@@ -12,24 +13,24 @@ Spindle& Spindle::getInstance(Config* configuration){
     return spindle; 
 }
 
-template<typename T>
-bool Spindle::addProcess(T* funcPtr) {
+bool Spindle::init(int threads){
     THREAD_MODE curMode = Config::getInstance().getThreadMode();
     switch (curMode)
     {
     case THREAD_MODE::POOL:
-        addProcess(funcPtr,hwThreads);
-        /* code */
+        createThreads(hwThreads);
+        currentThreads = threads;
         break;
     case THREAD_MODE::SPINDLE:
         // Machine Learning Values come here
         int someValueReturnedByML = 0;
         createThreads(someValueReturnedByML);
-
-        /* code */
         break;
     case THREAD_MODE::CONSTANT:
-        addProcess(funcPtr,hwThreads);
+        if ( threads <= 0 )
+            return false;
+        createThreads(threads);
+        currentThreads = threads;
         break;
     default:
         return false;
@@ -39,8 +40,9 @@ bool Spindle::addProcess(T* funcPtr) {
 }
 
 template<typename T>
-bool Spindle::addProcess(T* funcPtr, int threadCount){
-    createThreads(hwThreads);
+bool Spindle::addProcess(T* funcPtr) {
+    if (currentThreads   == 0)
+        return false;
     return true;
 }
 
