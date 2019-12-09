@@ -16,8 +16,7 @@ class Thread {
     private:
         std::thread::id tid;
         std::thread thread;
-        TsQueue<std::function<void()>> processPool;
-        TsQueue<ll> processIds;
+        TsQueue<FunctionToId> *processPool;
         std::condition_variable queueConditionVariable;
         std::mutex queueMutex;
         bool threadStatus;

@@ -4,7 +4,7 @@
 Thread::Thread()
 : threadStatus(false)
 {
-    //processPool = new TsQueue<FunctionToId>();
+    processPool = new TsQueue<FunctionToId>();
     processAssignedWork();
 }
 
@@ -23,17 +23,16 @@ void Thread::processAssignedWork()
     thread = std::thread([this]
     {
         std::unique_lock<std::mutex> lckgd(queueMutex);
-        queueConditionVariable.wait(lckgd, [&] {return !processPool.empty() + !threadStatus;});
+        queueConditionVariable.wait(lckgd, [&] {return !processPool->empty() + !threadStatus;});
         time startTime, endTime;
-        std::function<void()> *func;
+        FunctionToId *func;
         ll *id;
         if(!threadStatus) {
             threadStatus = true;
-            while(!processPool.empty()) {                
+            while(!processPool->empty()) {                
                 startTime = std::chrono::high_resolution_clock::now();
-                id = processIds.popBack();
-                func = processPool.popBack();
-                (*func)();
+                func = processPool->popBack();
+                (*func->funcPtr)();
                 endTime = std::chrono::high_resolution_clock::now();
                 //if ( con )
             }
