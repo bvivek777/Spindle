@@ -9,7 +9,7 @@ Thread::Thread()
 }
 
 template<typename T>
-bool Thread::addToQueue(T* funcPtr)
+bool Thread::addToQueue(T* funcPtr, ll processId)
 {
     {
         std::lock_guard<std::mutex> lckgd(queueMutex);
@@ -24,12 +24,19 @@ void Thread::processAssignedWork()
     {
         std::unique_lock<std::mutex> lckgd(queueMutex);
         queueConditionVariable.wait(lckgd, [&] {return !processPool->empty() + !threadStatus;});
-
+        time startTime, endTime;
+        FunctionToId *func;
+        ll *id;
         if(!threadStatus) {
-            while(!processPool->empty()) {
-                auto func = processPool->popBack();
-                //(*func)();
+            threadStatus = true;
+            while(!processPool->empty()) {                
+                startTime = std::chrono::high_resolution_clock::now();
+                func = processPool->popBack();
+                (*func->funcPtr)();
+                endTime = std::chrono::high_resolution_clock::now();
+                //if ( con )
             }
         }
+        threadStatus = false;
     });
 }

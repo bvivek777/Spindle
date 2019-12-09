@@ -8,6 +8,7 @@ private:
 public:
     Parallel(/* args */);
     ~Parallel();
+    void loadMonitor();
 };
 
 #endif

@@ -34,7 +34,7 @@ DataCollector::~DataCollector() {
     }
 }
 
-bool DataCollector::captureSnapshot(){
+bool DataCollector::captureCPUSnapshot(){
     auto lock = std::unique_lock<std::mutex>(mutex);
     try {
         stat.open("/proc/stat");
