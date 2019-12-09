@@ -4,8 +4,7 @@
 #include <mutex>
 #include "TsQueue.h"
 
-class Thread
-{
+class Thread {
     private:
         std::thread::id tid;
         std::thread thread;
@@ -17,7 +16,7 @@ class Thread
     public:
         Thread();
         template<typename T>
-        bool AddToQueue(T* funcPtr);
-        void ProcessAssignedWork();
+        bool addToQueue(T* funcPtr);
+        void processAssignedWork();
         
 };
