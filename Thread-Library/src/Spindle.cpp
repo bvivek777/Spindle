@@ -9,7 +9,12 @@ Spindle::Spindle(/* args */) {
 }
 
 Spindle::~Spindle() {
-    //delete thread here
+}
+
+Spindle* Spindle::getInstance(){
+    if ( !spindle )
+        spindle = new Spindle;
+    return spindle; 
 }
 
 template<typename T>

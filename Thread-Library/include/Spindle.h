@@ -25,13 +25,10 @@ typedef std::shared_ptr<Thread> threadPtr;
  */
 class Spindle {
 private:
-    //static int maxThreads;
-   // static Spindle *threads;   
+    static int maxThreads;  
     std::atomic<ThreadState> a {INIT};
     TsQueue<std::function<void(int function)>*> processPool;
-
-    // @ToDo create the key of this map based on some unique value which
-    // will be decided based on the type of operations the thread performs.
+    static Spindle* spindle;
     std::unordered_map<int, threadPtr> idThreadMap;
     int activeThreads;
     std::shared_ptr<std::atomic<bool>> flag;
@@ -39,10 +36,9 @@ private:
     ~Spindle();
 public:    
     int create();
-
     template<typename T>
     bool addProcess(T* functPtr);
-    
+    Spindle* getInstance();
     void setFlag();
     void getExecutionState();
 
