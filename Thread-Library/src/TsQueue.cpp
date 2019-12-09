@@ -30,7 +30,7 @@ T* TsQueue<T>::popBack(){
         return t;
     t = pendingQueue.back();
     pendingQueue.pop_back();
-    return T;
+    return t;
 }
 
 template<typename T>

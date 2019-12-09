@@ -1,5 +1,7 @@
 #include "Spindle.h"
 
+Spindle *Spindle::spindle = nullptr;
+
 Spindle::Spindle(/* args */) {
     //@TODO determine the number of threads to create using the data from ML.
     //Creating 3 threads for now.

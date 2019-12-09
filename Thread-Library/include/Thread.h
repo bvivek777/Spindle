@@ -8,7 +8,7 @@ class Thread {
     private:
         std::thread::id tid;
         std::thread thread;
-        TsQueue<std::function<void()>> processPool;
+        TsQueue<FunctionToId>* processPool;
         std::condition_variable queueConditionVariable;
         std::mutex queueMutex;
         bool threadStatus;
@@ -17,6 +17,5 @@ class Thread {
         Thread();
         template<typename T>
         bool addToQueue(T* funcPtr);
-        void processAssignedWork();
-        
+        void processAssignedWork();      
 };
