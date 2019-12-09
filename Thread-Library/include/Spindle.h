@@ -2,7 +2,6 @@
 #define __SPINDLE__
 
 #include <vector>
-#include <atomic>
 #include <memory>
 #include <functional>
 #include "TsQueue.h"
@@ -10,12 +9,6 @@
 #include "Thread.h"
 #include "sys/mman.h"
 #include <utility>
-
-/*
- * Create a constant set of states possible for the threads to be in
- */
-enum ThreadState { INIT, STOPPED, RUNNING, FINISHED };
-enum ScheduleType { RR, FCFS };
 
 typedef std::shared_ptr<Thread> threadPtr;
 /* 
@@ -28,16 +21,17 @@ class Spindle {
 private:
     static int hwThreads;
     static int currentThreads;
+    static std::atomic<ll> processCounter;
 
-    std::atomic<ThreadState> a {INIT};
     std::unordered_map<int, threadPtr> idThreadMap;
-    std::shared_ptr<std::atomic<bool>> flag;
+    static std::atomic<bool> flag;
 
     Spindle(Config* config);
     ~Spindle();
         
     bool createThreads(int threadCount);
-    bool assignProcesses();
+    bool assignFCFS(std::function<void()> *funcPtr);
+    bool assignML();
 
 public:
 

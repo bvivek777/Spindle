@@ -9,6 +9,18 @@ ll DataCollector::difference(std::string total, std::string free){
 }
 
 DataCollector::~DataCollector() {
+    
+}
+
+bool DataCollector::captureRuntime (ll funcId, ll runTime) {
+    if ( Config::getInstance().getRunningMode() != RUN_MODE::COLLECT_DATA )
+        return false;
+    RuntimeData r(funcId,runTime);
+    runTimeData.push_back(r);
+    return true;
+}
+
+bool DataCollector::writeSnapshotToFile(){
     try {
         std::remove("../data/data.csv");
         file.open("../data/data.csv");

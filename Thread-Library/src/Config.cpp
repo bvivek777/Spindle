@@ -35,3 +35,21 @@ Config& Config::getInstance(){
     static Config config;
     return config;
 }
+
+SCHEDULING Config::getSchedulingType(){
+    return scheduling;
+}
+
+bool Config::setSchedulingType(SCHEDULING sc){
+    scheduling = sc;
+    return true;
+}
+
+ORDER Config::getOrder(){
+    return order;
+}
+
+bool Config::setOrder(ORDER o){
+    order = o;
+    return true;
+}

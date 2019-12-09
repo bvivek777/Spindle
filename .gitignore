@@ -33,3 +33,6 @@
 
 #editor config
 .vscode/*
+
+# cmake build
+*/build/*

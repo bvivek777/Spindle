@@ -1,8 +1,10 @@
 #include "Spindle.h"
 
 Spindle::Spindle(Config* configuration = nullptr) {
-    hwThreads = std::thread::hardware_concurrency();
+    hwThreads = std::thread::hardware_concurrency() - 1;
     currentThreads = 0;
+    processCounter = 0;
+    flag = false;
 }
 
 Spindle::~Spindle() {
@@ -23,8 +25,10 @@ bool Spindle::init(int threads){
         break;
     case THREAD_MODE::SPINDLE:
         // Machine Learning Values come here
-        int someValueReturnedByML = 0;
-        createThreads(someValueReturnedByML);
+        { 
+            int someValueReturnedByML = 0;
+            createThreads(someValueReturnedByML);
+        }
         break;
     case THREAD_MODE::CONSTANT:
         if ( threads <= 0 )
@@ -41,15 +45,38 @@ bool Spindle::init(int threads){
 
 template<typename T>
 bool Spindle::addProcess(T* funcPtr) {
-    if (currentThreads   == 0)
+    SCHEDULING scheduling = Config::getInstance().getSchedulingType();
+    switch (scheduling)
+    {
+    case SCHEDULING::FCFS_SC :
+        assignFCFS(funcPtr);
+        break;
+    case SCHEDULING::ML :
+        assignML();
+        break;
+    case SCHEDULING::RR_SC :
+        /* code */
+        break;
+    default:
         return false;
+        break;
+    }
+    return true;
+}
+
+bool Spindle::assignFCFS(std::function<void()> *funcPtr){
+    if ( !flag )
+        return false;
+    idThreadMap.at( ( processCounter % currentThreads ) )->addToQueue(funcPtr,processCounter);
+    processCounter++;
     return true;
 }
 
 bool Spindle::createThreads(int threadCount){
     for(int i=0; i < threadCount; i++){
-        auto p = std::make_shared<Thread>(new Thread());
+        auto p = std::make_shared<Thread>();
         idThreadMap.insert({i,p});
     }
+    flag = true;
     return true;
 }

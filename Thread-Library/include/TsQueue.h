@@ -5,10 +5,17 @@
 #include <mutex>
 #include <functional>
 
+typedef long long int ll;
+
 struct FunctionToId
 {
     std::function<void()>* funcPtr;
-    uint id;
+    ll id;
+    FunctionToId(){}
+    FunctionToId(std::function<void()>* funcptr, ll id_a){
+        funcPtr = funcptr;
+        id = id_a;
+    }
 };
 
 /*

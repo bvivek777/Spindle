@@ -8,23 +8,32 @@
 #include "TsQueue.h"
 #include "Config.h"
 #include <chrono>
+#include <atomic>
+//#include "DataCollector.h"
 
-typedef std::chrono::_V2::system_clock::time_point time;
-typedef unsigned long long int ll;
+/*
+ * Create a constant set of states possible for the threads to be in
+ */
+enum THREAD_STATE { INIT, STOPPED, RUNNING, FINISHED };
 
 class Thread {
     private:
         std::thread::id tid;
         std::thread thread;
         TsQueue<FunctionToId> *processPool;
+        std::atomic<THREAD_STATE> threadState {INIT};        
         std::condition_variable queueConditionVariable;
         std::mutex queueMutex;
-        bool threadStatus;
+        std::atomic<bool> inScope;
+        
+        void processAssignedWork();   
     public:
         Thread();
+        ~Thread();
         template<typename T>
         bool addToQueue(T* funcPtr, ll processId);
-        void processAssignedWork();        
+        bool notify();
+        THREAD_STATE getRunningState();     
 };
 
 #endif
