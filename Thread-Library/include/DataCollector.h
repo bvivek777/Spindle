@@ -27,7 +27,7 @@ private:
     ll difference(std::string, std::string);
 public:
     ~DataCollector();
-    bool captureSnapshot();
-    bool write();
+    bool captureCPUSnapshot();
+    bool writeToFile();
 };
 #endif

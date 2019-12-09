@@ -1,7 +1,6 @@
 #ifndef __SPINDLE__
 #define __SPINDLE__
 
-#include <thread>
 #include <vector>
 #include <atomic>
 #include <memory>
@@ -9,6 +8,8 @@
 #include "TsQueue.h"
 #include "Config.h"
 #include "Thread.h"
+#include "sys/mman.h"
+#include <utility>
 
 /*
  * Create a constant set of states possible for the threads to be in
@@ -25,20 +26,27 @@ typedef std::shared_ptr<Thread> threadPtr;
  */
 class Spindle {
 private:
-    static int maxThreads;  
+    static int hwThreads;
+    static int currentThreads;
+
     std::atomic<ThreadState> a {INIT};
-    TsQueue<std::function<void(int function)>*> processPool;
-    static Spindle* spindle;
     std::unordered_map<int, threadPtr> idThreadMap;
-    int activeThreads;
     std::shared_ptr<std::atomic<bool>> flag;
-    Spindle(/* args */);
+
+    Spindle(Config* config);
     ~Spindle();
-public:    
-    int create();
+        
+    bool createThreads(int threadCount);
+
+public:
+
     template<typename T>
     bool addProcess(T* functPtr);
-    Spindle* getInstance();
+
+    template<typename T>
+    bool addProcess(T* functPtr,int threadCount);
+
+    static Spindle& getInstance(Config* configuration);
     void setFlag();
     void getExecutionState();
 
