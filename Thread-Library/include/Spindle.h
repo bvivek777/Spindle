@@ -1,17 +1,46 @@
-#include "PoolManager.h"
+#ifndef __SPINDLE__
+#define __SPINDLE__
 
+#include <thread>
+#include <vector>
+#include <atomic>
+#include <memory>
+#include <functional>
+#include "TsQueue.h"
+#include "Config.h"
+#include "Thread.h"
 
-class Spindle 
-{
+/*
+ * Create a constant set of states possible for the threads to be in
+ */
+enum ThreadState { INIT, STOPPED, RUNNING, FINISHED };
+enum ScheduleType { RR, FCFS };
+
+typedef std::shared_ptr<Thread> threadPtr;
+/* 
+ * Class to create and manage the execution of a thread
+ * Since the threads created will be governed by the Learning Application
+ * This class will only manage the execution of a single thread with multiple
+ * functions to be run in parallel 
+ */
+class Spindle {
 private:
-    std::unique_ptr<PoolManager> threadPoolPtr;
-    static Spindle* spindle;  
+    static int maxThreads;  
+    std::atomic<ThreadState> a {INIT};
+    TsQueue<std::function<void(int function)>*> processPool;
+    static Spindle* spindle;
+    std::unordered_map<int, threadPtr> idThreadMap;
+    int activeThreads;
+    std::shared_ptr<std::atomic<bool>> flag;
     Spindle(/* args */);
-public:
     ~Spindle();
-    static Spindle* getInstance();
+public:    
+    int create();
     template<typename T>
-    bool AddProcess(T* funcPtr);
-};
+    bool addProcess(T* functPtr);
+    Spindle* getInstance();
+    void setFlag();
+    void getExecutionState();
 
-Spindle *Spindle::spindle = nullptr;
+};
+#endif

@@ -1,6 +1,7 @@
-#include "include/PoolManager.h"
+/* #include "include/PoolManager.h"
 #include <iostream>
 #include <Windows.h>
+#include <Config.h>
 
 //#define _TRAINING_ true
 
@@ -19,4 +20,4 @@ int main(int argc, char* argv[])
     std::unique_ptr<PoolManager> plManager = std::make_unique<PoolManager>(plManager->getInstance());
     plManager->AddProcess(&print);
     plManager->AddProcess(&DoSomeWorkFor2Secs);
-}
+} */

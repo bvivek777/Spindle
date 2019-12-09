@@ -3,11 +3,11 @@
 Thread::Thread()
 : threadStatus(false)
 {
-    ProcessAssignedWork();
+    processAssignedWork();
 }
 
 template<typename T>
-bool Thread::AddToQueue(T* funcPtr)
+bool Thread::addToQueue(T* funcPtr)
 {
     {
         std::lock_guard<std::mutex> lckgd(queueMutex);
@@ -16,17 +16,15 @@ bool Thread::AddToQueue(T* funcPtr)
     queueConditionVariable.notify_all();
 }
 
-void Thread::ProcessAssignedWork()
+void Thread::processAssignedWork()
 {
     thread = std::thread([this]
     {
         std::unique_lock<std::mutex> lckgd(queueMutex);
         queueConditionVariable.wait(lckgd, [&] {return !processPool.empty() + !threadStatus;});
 
-        if(!threadStatus)
-        {
-            while(!processPool.empty())
-            {
+        if(!threadStatus) {
+            while(!processPool.empty()) {
                 auto func = processPool.popBack();
                 (*func)();
             }
