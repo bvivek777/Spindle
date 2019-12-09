@@ -1,8 +1,10 @@
 #include "Thread.h"
+#include "TsQueue.h"
 
 Thread::Thread()
 : threadStatus(false)
 {
+    //processPool = new TsQueue<FunctionToId>();
     processAssignedWork();
 }
 
@@ -11,7 +13,7 @@ bool Thread::addToQueue(T* funcPtr, ll processId)
 {
     {
         std::lock_guard<std::mutex> lckgd(queueMutex);
-        processPool.pushBack(funcPtr);
+        //processPool.pushBack(funcPtr);
     }
     queueConditionVariable.notify_all();
 }

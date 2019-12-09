@@ -3,6 +3,13 @@
 
 #include <deque>
 #include <mutex>
+#include <functional>
+
+struct FunctionToId
+{
+    std::function<void()>* funcPtr;
+    uint id;
+};
 
 /*
  * A thread safe Double ended queue, which will be used to store
@@ -15,7 +22,7 @@ private:
     std::mutex lock;
 public:
     /* Default Constructor */
-    TsQueue<T> ();
+    TsQueue();
 
     /* Pushes to the front of the queue
      * arg : reference of type <T>

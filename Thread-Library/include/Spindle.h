@@ -49,6 +49,5 @@ public:
     static Spindle& getInstance(Config* configuration);
     void setFlag();
     void getExecutionState();
-
 };
 #endif
