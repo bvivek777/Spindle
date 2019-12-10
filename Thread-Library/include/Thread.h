@@ -5,6 +5,7 @@
 #include <functional>
 #include <condition_variable>
 #include <mutex>
+#include <iostream>
 #include "TsQueue.h"
 #include "ThreadConfig.h"
 #include <chrono>

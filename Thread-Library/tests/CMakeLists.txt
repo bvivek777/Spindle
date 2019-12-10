@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0)
 project (SpindleTest)
+SET(GCC_COVERAGE_COMPILE_FLAGS "-lpthread")
+SET(GCC_COVERAGE_LINK_FLAGS    "-lpthread")
 add_executable(spindleTest main.cpp)
 TARGET_LINK_LIBRARIES( spindleTest SpindleLib)

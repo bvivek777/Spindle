@@ -1,29 +1,26 @@
-#include "../include/TsQueue.h"
+/* #include "../include/TsQueue.h"
 
 template<typename T>
-TsQueue<T>::TsQueue(/* args */) {
+TsQueue<T>::TsQueue(int a){
+
 }
 
 template<typename T>
-TsQueue<T>::~TsQueue() {
-}
-
-template<typename T>
-int TsQueue<T>::pushFront(T &front){
+int TsQueue<T>::pushFront(T &front, int a){
     auto lock = std::unique_lock<std::mutex>(this.mutex);
     pendingQueue.push_back(front);
     return pendingQueue.size(); 
 }
 
 template<typename T>
-int TsQueue<T>::pushBack(T &front){
+int TsQueue<T>::pushBack(T &front, int a){
     auto lock = std::unique_lock<std::mutex>(this.mutex);
     pendingQueue.push_back(front);
     return pendingQueue.size(); 
 }
 
 template<typename T>
-T* TsQueue<T>::popBack(){
+T TsQueue<T>::popBack(int a){
     auto lock = std::unique_lock<std::mutex>(this.mutex);
     T *t = NULL;
     if ( !pendingQueue.size() )
@@ -34,7 +31,7 @@ T* TsQueue<T>::popBack(){
 }
 
 template<typename T>
-T* TsQueue<T>::popFront() {
+T TsQueue<T>::popFront(int a) {
     auto lock = std::unique_lock<std::mutex>(this.lock);
     T *t = NULL;
     if ( !pendingQueue.size() )
@@ -45,14 +42,14 @@ T* TsQueue<T>::popFront() {
 }
 
 template<typename T>
-int TsQueue<T>::size(){
+int TsQueue<T>::size(int a){
     auto lock = std::unique_lock<std::mutex>(this.lock);
     return pendingQueue.size();
 }
 
 template<typename T>
-bool TsQueue<T>::empty()
+bool TsQueue<T>::empty(int a)
 {
     auto lock = std::unique_lock<std::mutex>(this.lock);
     return pendingQueue.empty();
-}
+} */

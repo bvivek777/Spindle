@@ -1,6 +1,4 @@
 #include "../include/Thread.h"
-#include "../include/TsQueue.h"
-#include <iostream>
 
 Thread::Thread() {
     processPool = new TsQueue<FunctionToId>();
@@ -39,7 +37,7 @@ void Thread::processAssignedWork()
         std::unique_lock<std::mutex> lckgd(queueMutex);
         queueConditionVariable.wait(lckgd, [&] {return !processPool->empty() + (threadState == THREAD_STATE::INIT);});
         //std::chrono::_V2::system_clock::time_point startTime, endTime;
-        FunctionToId *func;
+        FunctionToId func;
         ll runTime;
         if( threadState == THREAD_STATE::INIT ) {
             threadState = THREAD_STATE::RUNNING;
@@ -50,7 +48,7 @@ void Thread::processAssignedWork()
                     
                     try
                     {
-                        (*func->funcPtr)();
+                        (func.funcPtr)();
                     }
                     catch(const std::exception& e)
                     {

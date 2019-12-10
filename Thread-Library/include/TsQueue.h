@@ -26,44 +26,75 @@ template<typename T>
 class TsQueue {
 private:
     std::deque<T> pendingQueue;
-    std::mutex lock;
+    std::mutex mutex;
 public:
     /* Default Constructor */
-    TsQueue();
-
+    TsQueue(){};
+   // TsQueue(int a);
     /* Pushes to the front of the queue
      * arg : reference of type <T>
      * return : int ( current queue size / current entered position )
      */
-    int pushFront(T &front);
-
+    int pushFront(T &front){
+        auto lock = std::unique_lock<std::mutex>(mutex);
+        pendingQueue.push_back(front);
+        return pendingQueue.size(); 
+    }
+   // int pushFront(T &front, int a);
     /* Pushes to the back of the queue 
      * arg : reference of type <T>
      * return : int ( current queue size / current entered position )
      */
-    int pushBack(T &back);
-
+    int pushBack(T &front){
+        auto lock = std::unique_lock<std::mutex>(mutex);
+        pendingQueue.push_back(front);
+        return pendingQueue.size(); 
+    }
+   // int pushBack(T &front, int a);
     /* Deletes from the front of the queue
      * arg : NULL (doesn't take any arguments) 
      * return : *T ( pointer to the first object )
      */
-    T* popFront();
-
+    T popFront() {
+        auto lock = std::unique_lock<std::mutex>(mutex);
+        T t;
+        if ( !pendingQueue.size() )
+            return t;
+        t = pendingQueue.front();
+        pendingQueue.pop_front();
+        return t;
+    }
+   // T popFront(int a); 
     /* Deletes from the back of the queue
      * arg : NULL (doesn't take any arguments) 
      * return : *T ( pointer to the last object )
      */
-    T* popBack();
-
+    T popBack(){
+        auto lock = std::unique_lock<std::mutex>(mutex);
+        T t;
+        if ( !pendingQueue.size() )
+            return t;
+        t = pendingQueue.back();
+        pendingQueue.pop_back();
+        return t;
+    }
+   // T popBack(int a);
     /* Returns the total size of the queue 
      * arg : NULL (doesn't take any arguments) 
      * return : int ( size of the queue )
      */
-    int size();
-
-    bool empty();
-
+    int size(){
+        auto lock = std::unique_lock<std::mutex>(mutex);
+        return pendingQueue.size();
+    }
+   // int size(int a);
+    bool empty(){
+        auto lock = std::unique_lock<std::mutex>(mutex);
+        return pendingQueue.empty();
+    }
+   // bool empty(int a);
     /* Deallocates and clears the queue */
-    ~TsQueue<T>();
+    ~TsQueue(){};
+
 };
 #endif
