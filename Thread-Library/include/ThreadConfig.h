@@ -30,7 +30,7 @@ private:
     SCHEDULING scheduling;
     ORDER order;
     ~Config();
-    Config();
+    Config() = default;
     Config(RUN_MODE rm, THREAD_MODE tm);
 public:
     static Config& getInstance(RUN_MODE rm, THREAD_MODE tm);

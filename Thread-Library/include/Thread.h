@@ -6,7 +6,7 @@
 #include <condition_variable>
 #include <mutex>
 #include "TsQueue.h"
-#include "Config.h"
+#include "ThreadConfig.h"
 #include <chrono>
 #include <atomic>
 //#include "DataCollector.h"
@@ -30,8 +30,7 @@ class Thread {
     public:
         Thread();
         ~Thread();
-        template<typename T>
-        bool addToQueue(T* funcPtr, ll processId);
+        bool addToQueue(void (*funcPtr)(), ll processId);
         bool notify();
         THREAD_STATE getRunningState();     
 };

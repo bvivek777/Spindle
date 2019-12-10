@@ -1,11 +1,12 @@
-#include "DataCollector.h"
+#include "../include/DataCollector.h"
+#include <string>
 
 DataCollector::DataCollector(/* args */) {
     
 }
 
 ll DataCollector::difference(std::string total, std::string free){
-    return std::stoll(total.substr(14,10)) - std::stoll(free.substr(14,10));
+    return true; /*std::stoll(total.substr(14,10)) - std::stoll(free.substr(14,10))*/
 }
 
 DataCollector::~DataCollector() {
@@ -44,6 +45,7 @@ bool DataCollector::writeSnapshotToFile(){
         file.close();
         // @TODO log error
     }
+    return true;
 }
 
 bool DataCollector::captureCPUSnapshot(){

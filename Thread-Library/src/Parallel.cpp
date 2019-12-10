@@ -1,4 +1,4 @@
-#include "Parallel.h"
+#include "../include/Parallel.h"
 
 Parallel::Parallel(/* args */)
 {

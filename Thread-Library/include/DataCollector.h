@@ -5,7 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
-#include "Config.h"
+#include "ThreadConfig.h"
 
 typedef long long ll;
 

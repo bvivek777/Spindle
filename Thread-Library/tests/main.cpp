@@ -1,9 +1,9 @@
-/* #include "include/PoolManager.h"
+#include "../include/Spindle.h"
+#include "../include/ThreadConfig.h"
 #include <iostream>
-#include <Windows.h>
-#include <Config.h>
 
-//#define _TRAINING_ true
+
+#define _TRAINING_ true
 
 void print()
 {
@@ -12,12 +12,14 @@ void print()
 
 void DoSomeWorkFor2Secs()
 {
-    Sleep(2000);
+    //Sleep(2000);
 }
 
 int main(int argc, char* argv[])
 {
-    std::unique_ptr<PoolManager> plManager = std::make_unique<PoolManager>(plManager->getInstance());
-    plManager->AddProcess(&print);
-    plManager->AddProcess(&DoSomeWorkFor2Secs);
-} */
+    Config& config = Config::getInstance(RUN_MODE::PERFORMANCE, THREAD_MODE::POOL);
+
+    Spindle& spindle = Spindle::getInstance(&config);
+    spindle.addProcess(&print);
+    spindle.addProcess(&DoSomeWorkFor2Secs);
+} 

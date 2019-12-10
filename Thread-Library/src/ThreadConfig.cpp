@@ -1,4 +1,4 @@
-#include "Config.h"
+#include "../include/ThreadConfig.h"
 
 Config::Config(RUN_MODE rm, THREAD_MODE tm) {
     runMode = rm;

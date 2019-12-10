@@ -9,10 +9,10 @@ typedef long long int ll;
 
 struct FunctionToId
 {
-    std::function<void()>* funcPtr;
+    void (*funcPtr)();
     ll id;
     FunctionToId(){}
-    FunctionToId(std::function<void()>* funcptr, ll id_a){
+    FunctionToId(void (*funcptr)(), ll id_a){
         funcPtr = funcptr;
         id = id_a;
     }

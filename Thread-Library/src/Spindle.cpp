@@ -1,4 +1,9 @@
-#include "Spindle.h"
+#include "../include/Spindle.h"
+
+int Spindle::hwThreads = 0;
+int Spindle::currentThreads = 0;
+std::atomic<ll> Spindle::processCounter = 0;
+std::atomic<bool> Spindle::flag = false;
 
 Spindle::Spindle(Config* configuration = nullptr) {
     hwThreads = std::thread::hardware_concurrency() - 1;
@@ -13,6 +18,14 @@ Spindle::~Spindle() {
 Spindle& Spindle::getInstance(Config* configuration){
     static Spindle spindle(configuration);
     return spindle; 
+}
+
+void Spindle::setFlag()
+{
+}
+
+void Spindle::getExecutionState()
+{
 }
 
 bool Spindle::init(int threads){
@@ -31,7 +44,7 @@ bool Spindle::init(int threads){
         }
         break;
     case THREAD_MODE::CONSTANT:
-        if ( threads <= 0 )
+        if ( threads <= 0 || threads > hwThreads)
             return false;
         createThreads(threads);
         currentThreads = threads;
@@ -43,13 +56,12 @@ bool Spindle::init(int threads){
     return true;
 }
 
-template<typename T>
-bool Spindle::addProcess(T* funcPtr) {
+bool Spindle::addProcess(void (*functPtr)()) {
     SCHEDULING scheduling = Config::getInstance().getSchedulingType();
     switch (scheduling)
     {
     case SCHEDULING::FCFS_SC :
-        assignFCFS(funcPtr);
+        //assignFCFS(functPtr);
         break;
     case SCHEDULING::ML :
         assignML();
@@ -64,12 +76,17 @@ bool Spindle::addProcess(T* funcPtr) {
     return true;
 }
 
-bool Spindle::assignFCFS(std::function<void()> *funcPtr){
+bool Spindle::assignFCFS(void (*funcPtr)()){
     if ( !flag )
         return false;
     idThreadMap.at( ( processCounter % currentThreads ) )->addToQueue(funcPtr,processCounter);
     processCounter++;
     return true;
+}
+
+bool Spindle::assignML()
+{
+    return false;
 }
 
 bool Spindle::createThreads(int threadCount){
