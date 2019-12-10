@@ -36,3 +36,6 @@
 
 # cmake build
 */build/*
+*/CMakeFiles/*
+*/cmake_install.cmake
+*/Makefile
