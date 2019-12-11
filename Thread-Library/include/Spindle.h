@@ -22,7 +22,7 @@ private:
     static int hwThreads;
     static int currentThreads;
     static std::atomic<ll> processCounter;
-
+    Config* config;
     std::unordered_map<int, threadPtr> idThreadMap;
     static std::atomic<bool> flag;
 
