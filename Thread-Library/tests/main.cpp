@@ -7,19 +7,19 @@
 
 void print()
 {
-    std::cout<< "Hello World";
+   std::cout<< "Hello World";
 }
 
 void DoSomeWorkFor2Secs()
 {
-    //Sleep(2000);
+   // std::cout<<"THis is ghe second function";
 }
 
 int main(int argc, char* argv[])
 {
     Config& config = Config::getInstance(RUN_MODE::PERFORMANCE, THREAD_MODE::POOL);
-
     Spindle& spindle = Spindle::getInstance(&config);
+    spindle.init(1);
     spindle.addProcess(&print);
-    spindle.addProcess(&DoSomeWorkFor2Secs);
+    //spindle.addProcess(&DoSomeWorkFor2Secs);
 } 
