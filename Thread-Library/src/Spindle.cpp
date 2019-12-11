@@ -2,8 +2,8 @@
 
 int Spindle::hwThreads = 0;
 int Spindle::currentThreads = 0;
-std::atomic<ll> Spindle::processCounter = 0;
-std::atomic<bool> Spindle::flag = false;
+std::atomic<ll> Spindle::processCounter(0);
+std::atomic<bool> Spindle::flag(false);
 
 Spindle::Spindle(Config* configuration = nullptr) {
     hwThreads = std::thread::hardware_concurrency() - 1;

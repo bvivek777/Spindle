@@ -1,0 +1,4 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0)
+PROJECT( MyProject )
+ADD_SUBDIRECTORY( Thread-Library )
+ADD_SUBDIRECTORY( Thread-Library/tests)

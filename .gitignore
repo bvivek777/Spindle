@@ -39,3 +39,7 @@
 */CMakeFiles/*
 */cmake_install.cmake
 */Makefile
+*/CPackSourceConfig.cmake
+*/CMakeCache.txt
+*/CPackConfig.cmake
+*.make

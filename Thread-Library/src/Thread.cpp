@@ -53,7 +53,7 @@ void Thread::processAssignedWork()
                     catch(const std::exception& e)
                     {
                         std::cerr << e.what() << '\n';
-                        processAssignedWork();
+                        // processAssignedWork();
                     }
                     
                     //endTime = std::chrono::high_resolution_clock::now();
