@@ -30,6 +30,11 @@ int main(int argc, char* argv[])
     //std::cout<<config.getThreadMode()<<"\n";
     Spindle& spindle = Spindle::getInstance(&config);
     spindle.init(2);
+    int i = 1;
+    /* while ( i ){
+       spindle.addProcess(&print1);
+       std::cin>>i;
+    } */
     spindle.addProcess(&print1);
     spindle.addProcess(&print2);
     spindle.addProcess(&print3);

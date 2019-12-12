@@ -15,7 +15,7 @@
 /*
  * Create a constant set of states possible for the threads to be in
  */
-enum THREAD_STATE { INIT, STOPPED, RUNNING, FINISHED };
+enum THREAD_STATE { INIT, IDLE, RUNNING, FINISHED };
 
 class Thread {
     private:
