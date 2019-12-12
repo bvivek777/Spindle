@@ -1,81 +1,67 @@
 #include "../include/Thread.h"
 
 Thread::Thread() {
-    //std::cout<<"Thread class Created\n";
+    //std::cout<<"start - Thread::Thread()\n";
     processPool = new TsQueue<FunctionToId>();
     threadState = THREAD_STATE::INIT;
     inScope = true;
     processAssignedWork();
+    //std::cout<<"end - Thread::Thread()\n";
 }
 
-Thread::~Thread(){      
-   // inScope = false;  
-    queueConditionVariable.notify_all();
-    if(thread.joinable())
-        thread.join();
-    //std::cout<<"Thread class destructor\n";
-    delete processPool;  
+Thread::~Thread(){   
+    //std::cout<<"start - Thread::~Thread()\n";      
+    inScope = false;
+    thread.join();
+    delete processPool;
+    //std::cout<<"end - Thread::~Thread()\n";  
 }
 
-bool Thread::addToQueue(void (*funcPtr)(), ll processId)
-{
-    //std::cout<<"adding process to queue\n";
-    {
-        std::lock_guard<std::mutex> lckgd(queueMutex);
-        if(threadState == THREAD_STATE::INIT)
-            threadState == THREAD_STATE::RUNNING;
-        FunctionToId funcId(funcPtr,processId);
-        processPool->pushBack(funcId);
-    }
-    if(threadState != THREAD_STATE::RUNNING) {
-        //std::cout<<"process Assigned work called\n";
-        processAssignedWork();
-    }
-    //std::cout<<"added to queue\n";
+bool Thread::addToQueue(void (*funcPtr)(), ll processId) {
+    //std::cout<<"start - Thread::addToQueue\n";
+    FunctionToId funcId(funcPtr,processId);
+    processPool->pushBack(funcId);
     queueConditionVariable.notify_all();
+    //std::cout<<"end - Thread::addToQueue\n";
     return true;
 }
 
 void Thread::processAssignedWork() {
-    //std::cout<< "Inside processAssignment"<<std::endl;
-    //std::cout<<"Pool Size : "<<processPool->size()<<"\n";
-    thread = std::thread([this]
-    {
-        for(;;) {
-        std::unique_lock<std::mutex> lckgd(queueMutex);
-        queueConditionVariable.wait(lckgd, [&] {return !processPool->empty() + !(threadState == THREAD_STATE::RUNNING);});
-        //std::chrono::_V2::system_clock::time_point startTime, endTime;
-        //std::cout<<"Entered thread exec\n";
+    //std::cout<< "start - Thread::processAssignedWork - poolSize : "<<processPool->size()<<std::endl;
+    thread = std::thread([this] {
         FunctionToId func;
-        ll runTime;
-        if( threadState == THREAD_STATE::INIT ) {
-            threadState = THREAD_STATE::RUNNING;
-                while(!processPool->empty()) {    
-                    //std::cout<<"func in thread\n";            
-                    //startTime = std::chrono::high_resolution_clock::now();
-                    func = processPool->popBack();             
-                    try
-                    {
-                        //std::cout<<"about to exec func:"<<func.id<<"  "<<"\n";
-                        (func.funcPtr)();
-                    }
-                    catch(const std::exception& e)
-                    {
-                        std::cerr << e.what() << '\n';
-                    }
-                    //std::cout<<"func finished exec\n";
-                    //endTime = std::chrono::high_resolution_clock::now();
-                    //runTime = std::chrono::duration_cast<std::chrono::nanoseconds>(startTime-endTime).count();
-                }
-            threadState = THREAD_STATE::FINISHED;
-        }
+        std::chrono::_V2::system_clock::time_point startTime, endTime;
+        std::chrono::duration<double> runtime;
+        while( inScope ) {
+            while(processPool->size() == 0);
+            //std::cout<<"Thread::processAssignedWork - in new thread_poolSize : "<<processPool->size()<<"\n";
+            func = processPool->popFront();
+            //std::cout<<"Thread::processAssignedWork - function_id : "<<func.id<<"\n";
+            try {
+                startTime = std::chrono::high_resolution_clock::now();
+                (func.funcPtr)();
+                endTime = std::chrono::high_resolution_clock::now();
+                runtime = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
+                //std::cout<<" runtime for func :"<<func.id<<" - "<<runtime.count()<<"\n";
+            }
+            catch(const std::exception& e) {
+                std::cerr << e.what() << '\n';
+            }            
         }
     });
+    //std::cout<< "end - Thread::processAssignedWork - poolSize : "<<processPool->size()<<std::endl;
 }
 
-bool Thread::notify()
-{
+bool Thread::wait() {
+    if ( processPool->size() == 0 ) {
+        inScope = false;
+        return true;
+    }
     return false;
+}
+
+int Thread::isPending() {
+    return processPool->size() > 0;
 }
 
 THREAD_STATE Thread::getRunningState(){

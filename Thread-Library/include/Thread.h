@@ -10,7 +10,7 @@
 #include "ThreadConfig.h"
 #include <chrono>
 #include <atomic>
-//#include "DataCollector.h"
+#include "DataCollector.h"
 
 /*
  * Create a constant set of states possible for the threads to be in
@@ -26,13 +26,13 @@ class Thread {
         std::condition_variable queueConditionVariable;
         std::mutex queueMutex;
         std::atomic<bool> inScope;
-        
         void processAssignedWork();   
     public:
         Thread();
         ~Thread();
         bool addToQueue(void (*funcPtr)(), ll processId);
-        bool notify();
+        bool wait();
+        int isPending();
         THREAD_STATE getRunningState();     
 };
 

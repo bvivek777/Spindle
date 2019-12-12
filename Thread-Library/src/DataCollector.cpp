@@ -1,8 +1,8 @@
 #include "../include/DataCollector.h"
 #include <string>
 
-DataCollector::DataCollector(/* args */) {
-    
+DataCollector::DataCollector(Config* configuration) {
+    config = configuration;
 }
 
 ll DataCollector::difference(std::string total, std::string free){
@@ -13,8 +13,8 @@ DataCollector::~DataCollector() {
     
 }
 
-bool DataCollector::captureRuntime (ll funcId, ll runTime) {
-    if ( Config::getInstance().getRunningMode() != RUN_MODE::COLLECT_DATA )
+bool DataCollector::captureRuntime (ll funcId, double runTime) {
+    if ( config->getInstance().getRunningMode() != RUN_MODE::COLLECT_DATA )
         return false;
     RuntimeData r(funcId,runTime);
     runTimeData.push_back(r);
@@ -98,4 +98,8 @@ bool DataCollector::captureCPUSnapshot(){
         stat.close();
         return false;
     }
+}
+
+bool DataCollector::ifLog(){
+    return config->getInstance().getRunningMode() == RUN_MODE::COLLECT_DATA;
 }

@@ -37,11 +37,8 @@ private:
 public:
 
     bool init(int threads);
-
     bool addProcess(void (*functPtr)());
-
+    bool done();
     static Spindle& getInstance(Config* configuration);
-    void setFlag();
-    void getExecutionState();
 };
 #endif

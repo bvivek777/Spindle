@@ -20,9 +20,9 @@ struct ProcData{
 
 struct RuntimeData {
     ll funcId;
-    ll runTime;
+    double runTime;
     RuntimeData(){}
-    RuntimeData(ll f, ll r){
+    RuntimeData(ll f, double r){
         funcId = f;
         runTime = r;
     }
@@ -35,14 +35,17 @@ private:
     std::vector<RuntimeData> runTimeData;
     std::ofstream file;  
     std::ifstream stat;  
-    DataCollector();
+    Config* config;
     ll difference(std::string, std::string);
 public:
+    DataCollector(Config *config);
+    DataCollector() = default;
     ~DataCollector();
     bool captureCPUSnapshot();
     bool writeToFile();
     bool writeSnapshotToFile();
-    bool captureRuntime(ll funcNum, ll runtime);
+    bool captureRuntime(ll funcNum, double runtime);
     bool writeRumTimeToFile();
+    bool ifLog();
 };
 #endif
