@@ -21,7 +21,7 @@ class Thread {
     private:
         std::thread::id tid;
         std::thread thread;
-        TsQueue<FunctionToId> *processPool;
+        TsQueue<FunctionToId>* processPool;
         std::atomic<THREAD_STATE> threadState {INIT};        
         std::condition_variable queueConditionVariable;
         std::mutex queueMutex;

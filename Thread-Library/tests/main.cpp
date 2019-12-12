@@ -21,6 +21,10 @@ void print4() {
    std::cout<< "fourth function\n";
 }
 
+void print5() {
+   std::cout<< "fifth function\n";
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -39,4 +43,5 @@ int main(int argc, char* argv[])
     spindle.addProcess(&print2);
     spindle.addProcess(&print3);
     spindle.addProcess(&print4);
+    spindle.addProcess(&print5);
 } 

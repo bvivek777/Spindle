@@ -72,9 +72,9 @@ bool Spindle::addProcess(void (*functPtr)()) {
     switch (scheduling)
     {
     case SCHEDULING::FCFS_SC :
-        std::cout<<"FCFS running\n";
+        //std::cout<<"FCFS running\n";
         assignFCFS(functPtr);        
-        std::cout<<"func assigned\n";
+        //std::cout<<"func assigned\n";
         break;
     case SCHEDULING::ML :
         assignML();
