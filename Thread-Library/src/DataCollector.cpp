@@ -6,7 +6,7 @@ DataCollector::DataCollector(Config* configuration) {
 }
 
 ll DataCollector::difference(std::string total, std::string free){
-    return true; /*std::stoll(total.substr(14,10)) - std::stoll(free.substr(14,10))*/
+    return std::stoll(total.substr(14,10)) - std::stoll(free.substr(14,10));
 }
 
 DataCollector::~DataCollector() {
