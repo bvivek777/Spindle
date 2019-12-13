@@ -34,6 +34,10 @@ void Thread::processAssignedWork() {
         std::chrono::duration<double> runtime;
         while( inScope ) {
             while(processPool->size() == 0);
+            /* 
+             * std::unique_lock<std::mutex> lckgd(queueMutex);
+             * queueConditionVariable.wait(lckgd, [&] {return processPool->size()!=0 ;});            
+             */
             //std::cout<<"Thread::processAssignedWork - in new thread_poolSize : "<<processPool->size()<<"\n";
             func = processPool->popFront();
             //std::cout<<"Thread::processAssignedWork - function_id : "<<func.id<<"\n";

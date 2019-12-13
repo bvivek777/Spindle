@@ -11,9 +11,9 @@ void print1(int i) {
 }
 
 void print2() {
+   std::chrono::milliseconds timespan(1000);
+   std::this_thread::sleep_for(timespan);
    std::cout<<"Second function : "<<rand()<<"\n";
-   //std::chrono::milliseconds timespan(10000);
-   //std::this_thread::sleep_for(timespan);
 }
 
 void print3() {
@@ -32,21 +32,11 @@ void print5() {
 int main(int argc, char* argv[])
 {
     Config& config = Config::getInstance(RUN_MODE::PERFORMANCE, THREAD_MODE::CONSTANT);
-    //std::cout<<config.getThreadMode()<<"\n";
     config.setThreadMode(THREAD_MODE::CONSTANT);
-    //std::cout<<config.getThreadMode()<<"\n";
     Spindle& spindle = Spindle::getInstance(&config);
     spindle.init(2);
     srand(time(0));
-    /* for(int i=0; i<10; i++){
-       spindle.addProcess(&print2);
-    } */
     spindle.addProcess(&print2);
     spindle.addProcess(&print2);
     spindle.done();
-    /* spindle.addProcess(&print1);
-    spindle.addProcess(&print2);
-    spindle.addProcess(&print3);
-    spindle.addProcess(&print4);
-    spindle.addProcess(&print5); */
 } 
