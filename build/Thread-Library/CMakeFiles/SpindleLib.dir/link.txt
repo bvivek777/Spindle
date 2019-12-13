@@ -1,2 +1,0 @@
-/usr/bin/ar qc libSpindleLib.a  CMakeFiles/SpindleLib.dir/src/DataCollector.cpp.o CMakeFiles/SpindleLib.dir/src/Helper.cpp.o CMakeFiles/SpindleLib.dir/src/Learner.cpp.o CMakeFiles/SpindleLib.dir/src/Parallel.cpp.o CMakeFiles/SpindleLib.dir/src/Spindle.cpp.o CMakeFiles/SpindleLib.dir/src/Thread.cpp.o CMakeFiles/SpindleLib.dir/src/ThreadConfig.cpp.o CMakeFiles/SpindleLib.dir/src/TsQueue.cpp.o
-/usr/bin/ranlib libSpindleLib.a
