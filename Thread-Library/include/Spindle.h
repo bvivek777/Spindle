@@ -25,6 +25,7 @@ private:
     Config* config;
     std::unordered_map<int, threadPtr> idThreadMap;
     static std::atomic<bool> flag;
+    std::vector<int> functionThreadMapperCollection;
 
     Spindle() = default;
     Spindle(Config* config);
@@ -32,7 +33,7 @@ private:
         
     bool createThreads(int threadCount);
     bool assignFCFS(void (*funcPtr)());
-    bool assignML();
+    bool assignML(void (*funcPtr)());
 
 public:
 

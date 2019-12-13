@@ -25,12 +25,12 @@ void print5() {
    std::cout<< "fifth function\n";
 }
 
-
 int main(int argc, char* argv[])
 {
-    Config& config = Config::getInstance(RUN_MODE::PERFORMANCE, THREAD_MODE::CONSTANT);
+    Config& config = Config::getInstance(RUN_MODE::PERFORMANCE, THREAD_MODE::SPINDLE);
     //std::cout<<config.getThreadMode()<<"\n";
-    config.setThreadMode(THREAD_MODE::CONSTANT);
+    config.setThreadMode(THREAD_MODE::SPINDLE);
+    config.setSchedulingType(SCHEDULING::ML);
     //std::cout<<config.getThreadMode()<<"\n";
     Spindle& spindle = Spindle::getInstance(&config);
     spindle.init(2);
