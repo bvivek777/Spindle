@@ -46,7 +46,7 @@ void Thread::processAssignedWork() {
                 (func.funcPtr)();
                 endTime = std::chrono::high_resolution_clock::now();
                 runtime = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
-                //std::cout<<" runtime for func :"<<func.id<<" - "<<runtime.count()<<"\n";
+                std::cout<<" runtime for func :"<<func.id<<" - "<<runtime.count()<<"\n";
             }
             catch(const std::exception& e) {
                 std::cerr << e.what() << '\n';

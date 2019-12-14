@@ -1,42 +1,45 @@
 #include "../include/Spindle.h"
 #include "../include/ThreadConfig.h"
 #include <iostream>
-#include <time.h>
-#include <unistd.h>
+#include <fstream>
 
 #define _TRAINING_ true
 
-void print1(int i) {
-   std::cout<<i<<" First function\n";
+
+void fileOperations() {
+   /* std::ifstream file;
+   std::string readLine;
+   file.open("/home/bvivek2/Projects/permute/file.txt");
+   while( std::getline(file,readLine) ){
+
+   } */
 }
 
-void print2() {
-   std::chrono::milliseconds timespan(1000);
-   std::this_thread::sleep_for(timespan);
-   std::cout<<"Second function : "<<rand()<<"\n";
+void memoryOperations() {
+   int *n = new int[100000];
+   delete n;
 }
 
-void print3() {
-   std::cout<< "third function\n";
+void arithmeticOperations() {
+   int a = 25;
+   for(int i=0; i<100; i++){
+      a++;
+   }
 }
 
-void print4() {
+void contextSwitch() {
    std::cout<< "fourth function\n";
 }
 
-void print5() {
-   std::cout<< "fifth function\n";
-}
-
-
 int main(int argc, char* argv[])
 {
-    Config& config = Config::getInstance(RUN_MODE::PERFORMANCE, THREAD_MODE::CONSTANT);
-    config.setThreadMode(THREAD_MODE::CONSTANT);
-    Spindle& spindle = Spindle::getInstance(&config);
-    spindle.init(2);
-    srand(time(0));
-    spindle.addProcess(&print2);
-    spindle.addProcess(&print2);
-    spindle.done();
+   Config& config = Config::getInstance(RUN_MODE::PERFORMANCE, THREAD_MODE::CONSTANT);
+   config.setThreadMode(THREAD_MODE::CONSTANT);
+   config.setSchedulingType(SCHEDULING::FCFS_SC);
+   Spindle& spindle = Spindle::getInstance(&config);
+   spindle.init(2);
+   spindle.addProcess(&contextSwitch);
+   spindle.addProcess(&fileOperations);
+   spindle.addProcess(&memoryOperations);
+   spindle.done();
 } 

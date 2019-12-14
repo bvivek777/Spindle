@@ -78,7 +78,7 @@ bool Spindle::init(int threads){
 
 bool Spindle::addProcess(void (*functPtr)()) {
     if ( !flag ) {
-        std::cout<<"Spindle::addProcess() - Call init first\n";
+        //std::cout<<"Spindle::addProcess() - Call init first\n";
         return false;
     }
     SCHEDULING scheduling = Config::getInstance().getSchedulingType();
@@ -107,7 +107,7 @@ bool Spindle::addProcess(void (*functPtr)()) {
 bool Spindle::assignFCFS(void (*funcPtr)()){
     //std::cout<<" start - Spindle::assignFCFS()\n";
     if ( !flag ) {
-        std::cout<<"Spindle::assignFCFS() - Call init first\n";
+        //std::cout<<"Spindle::assignFCFS() - Call init first\n";
         return false;
     }
     idThreadMap.at( ( processCounter % currentThreads ) )->addToQueue(funcPtr,processCounter);
@@ -118,7 +118,7 @@ bool Spindle::assignFCFS(void (*funcPtr)()){
 
 bool Spindle::assignML() {
     if ( !flag ) {
-        std::cout<<"Spindle::assignML() - Call init first\n";
+        //std::cout<<"Spindle::assignML() - Call init first\n";
         return false;
     }
     return false;
