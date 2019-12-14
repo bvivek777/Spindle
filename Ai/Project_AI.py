@@ -47,7 +47,8 @@ def readData(code):
                                  'math',
                                  'db',
                                  'time']);
-    if DEBUG : print(data)
+    test = data.sample(frac = 1).reset_index(drop=True)
+    if DEBUG : print(test)
     return data
 
 def clusterAndLearn(df):
@@ -56,7 +57,7 @@ def clusterAndLearn(df):
     centers = clusterer.cluster_centers_
     
     score = silhouette_score(df, clusterer.labels_, metric='euclidean')
-    #print("KMeans score", score)
+    print("KMeans score", score)
     
     df['cluster'] = preds
     
@@ -81,18 +82,20 @@ def learnModel():
     table = clusterAndLearn(df)
     
 
-def SortClusterRunTimes(cluster_run_times):     # Method sorts the clusters based on runtime
-    cluster_run_times.sort(key = lambda x: float(x[1]), reverse = True)
-    return cluster_run_times
-
 def probabilityFunction(x):
     return math.exp(-x/4)
+
+def SortClusterRunTimes(cluster_run_times):     # Method sorts the clusters based on runtime
+    cluster_run_times.sort(key = lambda x: float(x[2]), reverse = True)
+    return cluster_run_times
 
 def ThreadAssignment(cluster_list, run_time_list):
     cluster_run_times = []
 
+    i = 0
     for clusters in cluster_list:                   # Find the cluster run times from test set
-        cluster_run_times.append([clusters, run_time_list[int(clusters)]])
+        cluster_run_times.append(["f"+str(i),clusters, run_time_list[int(clusters)]])
+        i += 1
 
     sorted_cluster_run_times = SortClusterRunTimes(cluster_run_times)
 
@@ -111,14 +114,14 @@ def ThreadAssignment(cluster_list, run_time_list):
             thread_assignment_list.append([sorted_cluster_run_times[0][0], number_of_threads])
             sorted_cluster_run_times = sorted_cluster_run_times[1:]
 
-    thread_assignment_result = []
+    thread_assignment_list.sort(key = lambda x: int(x[0][1]))
 
-    for i in range(len(cluster_list)):
-        for items in thread_assignment_list:
-            if cluster_list[i] == items[0]:
-                thread_assignment_result.append(items[1])
+    final_thread_assignment_list = []
+    
+    for items in thread_assignment_list:
+        final_thread_assignment_list.append(items[1])
 
-    return(thread_assignment_result)
+    return(final_thread_assignment_list)
 
 
 def clusterLoad():
@@ -131,7 +134,7 @@ def makeAssignment():
     
     data = readFile()
     dataFinal = readData(data)
-    df = dataFinal.sample(frac = 0.0001, replace = False, random_state = 1)
+    df = dataFinal.sample(n=10, replace = False, random_state = 1)
     df = df.reset_index(drop=True)
     
     assignment = clusterer.predict(df)

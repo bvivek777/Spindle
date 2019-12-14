@@ -10,7 +10,7 @@ from itertools import combinations as permutations;
 i = 1;
 a = "";
 targetList = [];
-runtimeList = [500,450,40,12,300];
+runtimeList = [800,466,218,5,4];
 while ( i <= 5 ):
     perm = permutations(runtimeList,i);
     for j in perm:
@@ -26,13 +26,13 @@ while ( i <= 5 ) :
     for obj in perm:
         for j in obj :
             for k in j :
-                if ( k == 500 ):
+                if ( k == 800 ):
                     a = "network"
-                elif ( k == 450 ):
+                elif ( k == 466 ):
                     a = "io"
-                elif ( k == 300 ):
+                elif ( k == 4 ):
                     a = "db"
-                elif ( k == 40 ):
+                elif ( k == 218 ):
                     a = "mem"
                 else :
                     a = "math"
