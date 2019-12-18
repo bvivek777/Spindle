@@ -1,4 +1,6 @@
 #include "../include/Spindle.h"
+#include <algorithm>
+#include <iostream>
 
 int Spindle::hwThreads = 0;
 int Spindle::currentThreads = 0;
@@ -9,6 +11,7 @@ Spindle::Spindle(Config* configuration) {
     //std::cout<<"start - Spindle::Spindle()\n";
     config = configuration;
     hwThreads = std::thread::hardware_concurrency() - 1;
+    functionThreadMapperCollection.clear();
     currentThreads = 0;
     processCounter = 0;
     flag = false;
@@ -54,11 +57,20 @@ bool Spindle::init(int threads){
         break;
     case THREAD_MODE::SPINDLE:
         // Machine Learning Values come here
-        { 
-            int someValueReturnedByML = 0;
-            //std::cout<<"Spindle::init() SPINDLE, start createThreads()\n";
-            createThreads(someValueReturnedByML);
-            //std::cout<<"Spindle::init() SPINDLE, end createThreads()\n";
+        {
+            functionThreadMapperCollection.clear();
+            std::string mlData;
+            std::getline(std::cin, mlData);
+            for (auto& c : mlData)
+            {
+                functionThreadMapperCollection.push_back(std::atoi(&c));
+            }
+            int numThreads = *std::max_element(functionThreadMapperCollection.begin(), 
+                functionThreadMapperCollection.end());
+            //std::cout<<"ML Mode\n" << numThreads;
+            createThreads(numThreads);
+            currentThreads = numThreads;
+            //std::cout<<"ML Mode Threads created\n";
         }
         break;
     case THREAD_MODE::CONSTANT:
@@ -91,7 +103,7 @@ bool Spindle::addProcess(void (*functPtr)()) {
         break;
     case SCHEDULING::ML :
         //std::cout<<"Spindle::addProcess(), start assignML\n";
-        assignML();
+        assignML(functPtr);
         //std::cout<<"Spindle::addProcess(), end assignML\n";
         break;
     case SCHEDULING::RR_SC :
@@ -116,12 +128,19 @@ bool Spindle::assignFCFS(void (*funcPtr)()){
     return true;
 }
 
-bool Spindle::assignML() {
+bool Spindle::assignML(void (*funcPtr)())
+{
+    //std::cout<<" start - Spindle::assignML()"<<"\n";
     if ( !flag ) {
         //std::cout<<"Spindle::assignML() - Call init first\n";
         return false;
     }
-    return false;
+    int threadId = functionThreadMapperCollection[processCounter];
+    idThreadMap[threadId - 1]->addToQueue(funcPtr, threadId); 
+    processCounter++;
+    flag = true;
+    //std::cout<<" end - Spindle::assignML()"<<"\n";
+    return true;
 }
 
 bool Spindle::createThreads(int threadC) {
@@ -132,7 +151,7 @@ bool Spindle::createThreads(int threadC) {
         idThreadMap.insert({i,p});
     }
     flag = true;
-    //std::cout<<" start - Spindle::createThreads()\n";
+    //std::cout<<" end - Spindle::createThreads()\n";
     return true;
 }
 
