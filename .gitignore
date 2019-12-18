@@ -36,6 +36,7 @@
 
 # cmake build
 */build/*
+/build/*
 */CMakeFiles/*
 */cmake_install.cmake
 */Makefile
@@ -43,3 +44,8 @@
 */CMakeCache.txt
 */CPackConfig.cmake
 *.make
+
+# ML data
+*.model
+*.table
+*/training.txt
