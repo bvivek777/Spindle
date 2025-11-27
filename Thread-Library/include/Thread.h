@@ -1,39 +1,53 @@
 #ifndef __THREAD_CLASS__
 #define __THREAD_CLASS__
 
-#include <thread>
-#include <functional>
-#include <condition_variable>
-#include <mutex>
-#include <iostream>
-#include "TsQueue.h"
-#include "ThreadConfig.h"
-#include <chrono>
 #include <atomic>
-//#include "DataCollector.h"
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <deque>
+#include <functional>
+#include <mutex>
+#include <thread>
+
+#include "ThreadConfig.h"
 
 /*
  * Create a constant set of states possible for the threads to be in
  */
 enum THREAD_STATE { INIT, STOPPED, RUNNING, FINISHED };
 
+using TaskId = std::uint64_t;
+
+struct WorkItem {
+    std::function<void()> task;
+    TaskId id;
+};
+
 class Thread {
-    private:
-        std::thread::id tid;
-        std::thread thread;
-        TsQueue<FunctionToId>* processPool;
-        std::atomic<THREAD_STATE> threadState {INIT};        
-        std::condition_variable queueConditionVariable;
-        std::mutex queueMutex;
-        std::atomic<bool> inScope;
-        
-        void processAssignedWork();   
-    public:
-        Thread();
-        ~Thread();
-        bool addToQueue(void (*funcPtr)(), ll processId);
-        bool notify();
-        THREAD_STATE getRunningState();     
+private:
+    std::thread::id tid;
+    std::thread worker;
+    mutable std::mutex queueMutex;
+    std::condition_variable queueConditionVariable;
+    std::deque<WorkItem> workQueue;
+    std::atomic<bool> stopping{false};
+    std::atomic<THREAD_STATE> threadState{THREAD_STATE::INIT};
+
+    void workerLoop();
+
+public:
+    Thread();
+    ~Thread();
+
+    Thread(const Thread&) = delete;
+    Thread& operator=(const Thread&) = delete;
+    Thread(Thread&&) = delete;
+    Thread& operator=(Thread&&) = delete;
+
+    void enqueue(WorkItem&& work);
+    std::size_t pending() const;
+    THREAD_STATE getRunningState() const;
 };
 
 #endif

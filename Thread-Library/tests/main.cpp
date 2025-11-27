@@ -1,42 +1,49 @@
 #include "../include/Spindle.h"
 #include "../include/ThreadConfig.h"
+
+#include <atomic>
+#include <future>
 #include <iostream>
+#include <vector>
 
+namespace {
 
-#define _TRAINING_ true
-
-void print1() {
-   std::cout<< "First function\n";
+int computeValue(int base, int delta) {
+    return base + delta;
 }
 
-void print2() {
-   std::cout<< "Second function\n";
-}
+}  // namespace
 
-void print3() {
-   std::cout<< "third function\n";
-}
+int main(int, char**) {
+    Config& config = Config::getInstance(RUN_MODE::PERFORMANCE, THREAD_MODE::POOL);
+    config.setSchedulingType(SCHEDULING::FCFS_SC);
 
-void print4() {
-   std::cout<< "fourth function\n";
-}
-
-void print5() {
-   std::cout<< "fifth function\n";
-}
-
-int main(int argc, char* argv[])
-{
-    Config& config = Config::getInstance(RUN_MODE::PERFORMANCE, THREAD_MODE::SPINDLE);
-    //std::cout<<config.getThreadMode()<<"\n";
-    config.setThreadMode(THREAD_MODE::SPINDLE);
-    config.setSchedulingType(SCHEDULING::ML);
-    //std::cout<<config.getThreadMode()<<"\n";
     Spindle& spindle = Spindle::getInstance(&config);
-    spindle.init(2);
-    spindle.addProcess(&print1);
-    spindle.addProcess(&print2);
-    spindle.addProcess(&print3);
-    spindle.addProcess(&print4);
-    spindle.addProcess(&print5);
-} 
+    spindle.init(0);
+
+    std::atomic<int> counter{0};
+    std::vector<std::future<int>> futures;
+
+    for (int i = 0; i < 8; ++i) {
+        futures.push_back(spindle.submit([&counter, i]() {
+            counter.fetch_add(1, std::memory_order_relaxed);
+            return computeValue(10, i);
+        }));
+    }
+
+    spindle.addProcess([]() { std::cout << "Spindle is ready for general use\n"; });
+
+    int resultSum = 0;
+    for (auto& fut : futures) {
+        resultSum += fut.get();
+    }
+
+    constexpr int expectedSum = 8 * 10 + (7 * 8) / 2;
+
+    if (counter.load() != 8 || resultSum != expectedSum) {
+        std::cerr << "Thread scheduling failed\n";
+        return 1;
+    }
+
+    return 0;
+}

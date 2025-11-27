@@ -1,79 +1,74 @@
 #include "../include/Thread.h"
 
+#include <iostream>
+#include <utility>
+
 Thread::Thread() {
-    //std::cout<<"Thread class Created\n";
-    processPool = new TsQueue<FunctionToId>();
-    threadState = THREAD_STATE::INIT;
-    inScope = true;
-    processAssignedWork();
+    worker = std::thread([this]() { workerLoop(); });
 }
 
-Thread::~Thread(){      
-   // inScope = false;  
-    queueConditionVariable.notify_all();
-    if(thread.joinable())
-        thread.join();
-    //std::cout<<"Thread class destructor\n";
-    delete processPool;  
-}
-
-bool Thread::addToQueue(void (*funcPtr)(), ll processId)
-{
-    //std::cout<<"adding process to queue\n";
+Thread::~Thread() {
     {
-        std::lock_guard<std::mutex> lckgd(queueMutex);
-        if(threadState == THREAD_STATE::INIT)
-            threadState == THREAD_STATE::RUNNING;
-        FunctionToId funcId(funcPtr,processId);
-        processPool->pushBack(funcId);
+        std::lock_guard<std::mutex> lock(queueMutex);
+        stopping = true;
     }
-    //std::cout<<"added to queue\n";
     queueConditionVariable.notify_all();
-    return true;
+    if (worker.joinable()) {
+        worker.join();
+    }
+    threadState = THREAD_STATE::STOPPED;
 }
 
-void Thread::processAssignedWork() {
-    //std::cout<< "Inside processAssignment"<<std::endl;
-    //std::cout<<"Pool Size : "<<processPool->size()<<"\n";
-    thread = std::thread([this]
+void Thread::enqueue(WorkItem&& work) {
     {
-        for(;;) {
-        std::unique_lock<std::mutex> lckgd(queueMutex);
-        queueConditionVariable.wait(lckgd, [&] {return !processPool->empty() + !(threadState == THREAD_STATE::RUNNING);});
-        //std::chrono::_V2::system_clock::time_point startTime, endTime;
-        //std::cout<<"Entered thread exec\n";
-        FunctionToId func;
-        ll runTime;
-        if( threadState != THREAD_STATE::RUNNING ) {
+        std::lock_guard<std::mutex> lock(queueMutex);
+        workQueue.emplace_back(std::move(work));
+    }
+    queueConditionVariable.notify_one();
+}
+
+std::size_t Thread::pending() const {
+    std::lock_guard<std::mutex> lock(queueMutex);
+    return workQueue.size();
+}
+
+THREAD_STATE Thread::getRunningState() const {
+    return threadState.load();
+}
+
+void Thread::workerLoop() {
+    tid = std::this_thread::get_id();
+    for (;;) {
+        WorkItem work;
+        {
+            std::unique_lock<std::mutex> lock(queueMutex);
+            queueConditionVariable.wait(
+                lock,
+                [this]() { return stopping.load() || !workQueue.empty(); });
+
+            if (stopping.load() && workQueue.empty()) {
+                threadState = THREAD_STATE::STOPPED;
+                return;
+            }
+
+            work = std::move(workQueue.front());
+            workQueue.pop_front();
             threadState = THREAD_STATE::RUNNING;
-                while(!processPool->empty()) {    
-                    //std::cout<<"func in thread\n";            
-                    //startTime = std::chrono::high_resolution_clock::now();
-                    func = processPool->popBack();             
-                    try
-                    {
-                        //std::cout<<"about to exec func:"<<func.id<<"  "<<"\n";
-                        (func.funcPtr)();
-                    }
-                    catch(const std::exception& e)
-                    {
-                        std::cerr << e.what() << '\n';
-                    }
-                    //std::cout<<"func finished exec\n";
-                    //endTime = std::chrono::high_resolution_clock::now();
-                    //runTime = std::chrono::duration_cast<std::chrono::nanoseconds>(startTime-endTime).count();
-                }
-            threadState = THREAD_STATE::FINISHED;
         }
+
+        try {
+            if (work.task) {
+                work.task();
+            }
+        } catch (const std::exception& ex) {
+            std::cerr << "Thread worker exception: " << ex.what() << std::endl;
+        } catch (...) {
+            std::cerr << "Thread worker encountered unknown exception" << std::endl;
         }
-    });
-}
 
-bool Thread::notify()
-{
-    return false;
-}
-
-THREAD_STATE Thread::getRunningState(){
-    return threadState;
+        if (!stopping.load()) {
+            std::lock_guard<std::mutex> lock(queueMutex);
+            threadState = workQueue.empty() ? THREAD_STATE::FINISHED : THREAD_STATE::RUNNING;
+        }
+    }
 }

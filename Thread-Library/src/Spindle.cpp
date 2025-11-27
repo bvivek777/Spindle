@@ -1,133 +1,140 @@
 #include "../include/Spindle.h"
+
 #include <algorithm>
-#include <iostream>
+#include <stdexcept>
+#include <thread>
 
-int Spindle::hwThreads = 0;
-int Spindle::currentThreads = 0;
-std::atomic<ll> Spindle::processCounter(0);
-std::atomic<bool> Spindle::flag(false);
+Spindle::Spindle(Config* configuration)
+    : config(configuration),
+      processCounter(0),
+      initialized(false) {}
 
-Spindle::Spindle(Config* configuration) {
-    //std::cout<<"Spindle init complete\n";
-    config = configuration;
-    hwThreads = std::thread::hardware_concurrency() - 1;
-    functionThreadMapperCollection.clear();
-    currentThreads = 0;
-    processCounter = 0;
-    flag = false;
-}
+Spindle::~Spindle() = default;
 
-Spindle::~Spindle() {
-    //delete config;
-}
-
-Spindle& Spindle::getInstance(Config* configuration){
+Spindle& Spindle::getInstance(Config* configuration) {
     static Spindle spindle(configuration);
-    //std::cout<<"spindle instance returned\n";
-    return spindle; 
-}
-
-void Spindle::setFlag()
-{
-}
-
-void Spindle::getExecutionState() {
-
-}
-
-bool Spindle::init(int threads){
-    THREAD_MODE curMode = config->getThreadMode();
-    //std::cout<<"Init called with "<<threads<<" threads executing\n";
-    switch (curMode)
-    {
-    case THREAD_MODE::POOL:
-        //std::cout<<"Pool Mode\n";
-        createThreads(hwThreads);
-        //std::cout<<"Pool Threads created\n";
-        currentThreads = threads;
-        break;
-    case THREAD_MODE::SPINDLE:
-        // Machine Learning Values come here
-        {
-            functionThreadMapperCollection.clear();
-            std::string mlData;
-            std::getline(std::cin, mlData);
-            for (auto& c : mlData)
-            {
-                functionThreadMapperCollection.push_back(std::atoi(&c));
-            }
-            int numThreads = *std::max_element(functionThreadMapperCollection.begin(), 
-                functionThreadMapperCollection.end());
-            std::cout<<"ML Mode\n" << numThreads;
-            createThreads(numThreads);
-            currentThreads = numThreads;
-            //std::cout<<"ML Mode Threads created\n";
-        }
-        break;
-    case THREAD_MODE::CONSTANT:
-        if ( threads <= 0 || threads > hwThreads)
-            return false;
-        //std::cout<<"Constant mode\n";
-        createThreads(threads);
-        //std::cout<<"Const Threads Created\n";
-        currentThreads = threads;
-        break;
-    default:
-        return false;
-        break;
+    if (configuration != nullptr) {
+        spindle.config = configuration;
     }
+    return spindle;
+}
+
+bool Spindle::init(int threads) {
+    if (config == nullptr) {
+        throw std::logic_error("Config must be provided before initializing Spindle");
+    }
+
+    const std::size_t workerCount = resolveThreadCount(threads);
+    if (workerCount == 0) {
+        throw std::invalid_argument("Cannot initialize Spindle with zero worker threads");
+    }
+
+    std::lock_guard<std::mutex> lock(workerMutex);
+    workers.clear();
+    workers.reserve(workerCount);
+    for (std::size_t i = 0; i < workerCount; ++i) {
+        workers.push_back(std::make_unique<Thread>());
+    }
+
+    processCounter.store(0, std::memory_order_relaxed);
+    initialized.store(true, std::memory_order_release);
     return true;
 }
 
 bool Spindle::addProcess(void (*functPtr)()) {
-    SCHEDULING scheduling = config->getSchedulingType();
-    switch (scheduling)
-    {
-    case SCHEDULING::FCFS_SC :
-        std::cout<<"FCFS running\n";
-        assignFCFS(functPtr);        
-        //std::cout<<"func assigned\n";
-        break;
-    case SCHEDULING::ML :
-        std::cout<<"ML running\n";
-        assignML(functPtr);
-        break;
-    case SCHEDULING::RR_SC :
-        /* code */
-        break;
-    default:
+    if (functPtr == nullptr) {
         return false;
-        break;
     }
+    submit(functPtr);
     return true;
 }
 
-bool Spindle::assignFCFS(void (*funcPtr)()){
-    if ( !flag )
-        return false;
-    //std::cout<<"assigning to FCFS\n";
-    idThreadMap.at(( processCounter % currentThreads ) )->addToQueue(funcPtr,processCounter);
-    processCounter++;
-    //std::cout<<"added and incremented counter\n";
-    return true;
-}
-
-bool Spindle::assignML(void (*funcPtr)())
-{
-    int threadId = functionThreadMapperCollection[processCounter];
-    idThreadMap[threadId - 1]->addToQueue(funcPtr, threadId); 
-    processCounter++;
-    flag = true;
-    return true;
-}
-
-bool Spindle::createThreads(int threadC){
-    //std::cout<<"Creating Threads"<<threadC<<"\n";
-    for(int i=0; i < threadC; i++){
-        auto p = std::make_shared<Thread>();
-        idThreadMap.insert({i,p});
+void Spindle::setTrainingPlan(const std::vector<std::size_t>& planner) {
+    std::lock_guard<std::mutex> lock(workerMutex);
+    trainingPlan.clear();
+    trainingPlan.reserve(planner.size());
+    for (auto threadIndex : planner) {
+        trainingPlan.push_back(threadIndex == 0 ? 0 : threadIndex - 1);
     }
-    flag = true;
-    //std::cout<<"Threads Created\n";
-    return true;
+}
+
+bool Spindle::isInitialized() const {
+    return initialized.load(std::memory_order_acquire);
+}
+
+std::size_t Spindle::resolveThreadCount(int requestedThreads) const {
+    const std::size_t hw = std::max(1u, std::thread::hardware_concurrency());
+    const THREAD_MODE mode = config->getThreadMode();
+
+    switch (mode) {
+        case THREAD_MODE::POOL:
+            return hw;
+        case THREAD_MODE::SPINDLE: {
+            std::lock_guard<std::mutex> lock(workerMutex);
+            if (!trainingPlan.empty()) {
+                const auto maxEntry =
+                    *std::max_element(trainingPlan.begin(), trainingPlan.end());
+                const std::size_t requiredThreads =
+                    std::max<std::size_t>(static_cast<std::size_t>(1), maxEntry + 1);
+                return std::min<std::size_t>(requiredThreads, hw);
+            }
+            return hw;
+        }
+        case THREAD_MODE::CONSTANT:
+            if (requestedThreads <= 0) {
+                throw std::invalid_argument("Requested thread count must be positive in CONSTANT mode");
+            }
+            return std::min<std::size_t>(requestedThreads, hw);
+        default:
+            return hw;
+    }
+}
+
+std::size_t Spindle::selectWorker(TaskId taskId) {
+    if (workers.empty()) {
+        throw std::logic_error("Spindle workers are not initialized");
+    }
+
+    const SCHEDULING scheduling = config->getSchedulingType();
+
+    switch (scheduling) {
+        case SCHEDULING::ML:
+            if (!trainingPlan.empty()) {
+                const std::size_t planIndex = static_cast<std::size_t>(taskId % trainingPlan.size());
+                return trainingPlan[planIndex] % workers.size();
+            }
+            [[fallthrough]];
+        case SCHEDULING::RR_SC:
+            return static_cast<std::size_t>(taskId % workers.size());
+        case SCHEDULING::FCFS_SC:
+        default:
+            return findLeastLoadedWorker();
+    }
+}
+
+std::size_t Spindle::findLeastLoadedWorker() const {
+    if (workers.empty()) {
+        throw std::logic_error("No workers available");
+    }
+
+    std::size_t leastLoadedIndex = 0;
+    std::size_t leastPending = workers.front()->pending();
+
+    for (std::size_t i = 1; i < workers.size(); ++i) {
+        const std::size_t pending = workers[i]->pending();
+        if (pending < leastPending) {
+            leastPending = pending;
+            leastLoadedIndex = i;
+        }
+    }
+
+    return leastLoadedIndex;
+}
+
+void Spindle::dispatchWork(std::function<void()> job, TaskId taskId) {
+    if (!isInitialized()) {
+        throw std::logic_error("Spindle must be initialized before dispatching work");
+    }
+    const std::size_t index = selectWorker(taskId);
+    workers.at(index)->enqueue(WorkItem{std::move(job), taskId});
 }
