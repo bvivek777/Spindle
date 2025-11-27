@@ -28,11 +28,18 @@ bool Config::setThreadMode(THREAD_MODE tm){
 
 Config& Config::getInstance(RUN_MODE rm, THREAD_MODE tm){
     static Config config(rm, tm);
+    // Update the singleton instance if it was already created
+    if (config.runMode != rm || config.threadMode != tm) {
+        config.runMode = rm;
+        config.threadMode = tm;
+    }
     return config;
 }
 
 Config& Config::getInstance(){
     static Config config;
+    // If config was never initialized, use defaults
+    // This ensures we always return the same instance
     return config;
 }
 

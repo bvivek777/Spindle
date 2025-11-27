@@ -23,34 +23,19 @@ Spindle::Spindle(Config* configuration) {
 }
 
 Spindle::~Spindle() {
-    // Wait for all pending work to complete
-    bool hasPending = true;
-    const int maxWaitIterations = 1000; // Prevent infinite loop
-    int iterations = 0;
+    // Set flag to stop accepting new work
+    flag = false;
     
-    while (hasPending && iterations < maxWaitIterations) {
-        hasPending = false;
-        for(int i = 0; i < currentThreads; i++){
-            auto it = idThreadMap.find(i);
-            if (it != idThreadMap.end()) {
-                if (it->second->isPending()) {
-                    hasPending = true;
-                }
-            }
-        }
-        if (hasPending) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            iterations++;
-        }
-    }
-    
-    // Wait for threads to finish
+    // Wait for all threads to finish their current work and exit
     for(int i = 0; i < currentThreads; i++){
         auto it = idThreadMap.find(i);
         if (it != idThreadMap.end()) {
             it->second->wait();
         }
     }
+    
+    // Clear the map
+    idThreadMap.clear();
 }
 
 Spindle& Spindle::getInstance(Config* configuration){
@@ -157,13 +142,14 @@ bool Spindle::assignFCFS(void (*funcPtr)()){
     if (funcPtr == nullptr) {
         return false;
     }
-    int threadIndex = processCounter % currentThreads;
+    // Atomically get and increment the counter to avoid race conditions
+    ll currentId = processCounter.fetch_add(1);
+    int threadIndex = currentId % currentThreads;
     auto it = idThreadMap.find(threadIndex);
     if (it == idThreadMap.end()) {
         return false;
     }
-    it->second->addToQueue(funcPtr, processCounter);
-    processCounter++;
+    it->second->addToQueue(funcPtr, currentId);
     return true;
 }
 
@@ -172,11 +158,13 @@ bool Spindle::assignML(void (*funcPtr)())
     if ( !flag ) {
         return false;
     }
+    // Atomically get and increment the counter to avoid race conditions
+    ll currentId = processCounter.fetch_add(1);
     if (functionThreadMapperCollection.empty() || 
-        static_cast<size_t>(processCounter) >= functionThreadMapperCollection.size()) {
+        static_cast<size_t>(currentId) >= functionThreadMapperCollection.size()) {
         return false;
     }
-    int threadId = functionThreadMapperCollection[processCounter];
+    int threadId = functionThreadMapperCollection[currentId];
     if (threadId < 1 || threadId > currentThreads) {
         return false;
     }
@@ -184,8 +172,7 @@ bool Spindle::assignML(void (*funcPtr)())
     if (it == idThreadMap.end()) {
         return false;
     }
-    it->second->addToQueue(funcPtr, threadId); 
-    processCounter++;
+    it->second->addToQueue(funcPtr, currentId); 
     return true;
 }
 

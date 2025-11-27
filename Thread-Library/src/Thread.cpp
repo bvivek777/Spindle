@@ -43,6 +43,8 @@ void Thread::processAssignedWork() {
                 break;
             }
             
+            // Pop from queue (TsQueue has its own mutex, so this is safe)
+            // Unlock our mutex before popping to avoid holding multiple locks
             lock.unlock();
             func = processPool->popFront();
             
@@ -63,16 +65,21 @@ void Thread::processAssignedWork() {
 }
 
 bool Thread::wait() {
-    if ( processPool->empty() ) {
-        inScope = false;
-        queueConditionVariable.notify_all(); // Wake up thread to exit
-        return true;
+    // Set flag to stop accepting new work
+    inScope = false;
+    queueConditionVariable.notify_all(); // Wake up thread to exit
+    
+    // Wait for thread to finish
+    if (thread.joinable()) {
+        thread.join();
     }
-    return false;
+    
+    return true;
 }
 
 int Thread::isPending() {
-    return processPool->size() > 0;
+    // Thread-safe check of queue size
+    return static_cast<int>(processPool->size());
 }
 
 THREAD_STATE Thread::getRunningState(){

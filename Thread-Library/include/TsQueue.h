@@ -6,6 +6,7 @@
 #include <functional>
 #include <utility>
 #include <algorithm>
+#include <memory>
 
 typedef long long int ll;
 
@@ -63,9 +64,9 @@ public:
      * return : int ( current queue size / current entered position )
      */
     int pushFront(const T &front){
-        auto lock = std::unique_lock<std::mutex>(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         pendingQueue.push_front(front);
-        return pendingQueue.size(); 
+        return static_cast<int>(pendingQueue.size()); 
     }
    // int pushFront(T &front, int a);
     /* Pushes to the back of the queue 
@@ -73,9 +74,9 @@ public:
      * return : int ( current queue size / current entered position )
      */
     int pushBack(const T &front){
-        auto lock = std::unique_lock<std::mutex>(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         pendingQueue.push_back(front);
-        return pendingQueue.size(); 
+        return static_cast<int>(pendingQueue.size()); 
     }
     
     /* Emplace to the back of the queue (more efficient for non-copyable types)
@@ -84,9 +85,9 @@ public:
      */
     template<typename... Args>
     int emplaceBack(Args&&... args) {
-        auto lock = std::unique_lock<std::mutex>(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         pendingQueue.emplace_back(std::forward<Args>(args)...);
-        return pendingQueue.size();
+        return static_cast<int>(pendingQueue.size());
     }
    // int pushBack(T &front, int a);
     /* Deletes from the front of the queue
@@ -94,7 +95,7 @@ public:
      * return : T ( copy of the first object, default-constructed if empty )
      */
     T popFront() {
-        auto lock = std::unique_lock<std::mutex>(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         if (pendingQueue.empty()) {
             return T{};
         }
@@ -108,7 +109,7 @@ public:
      * return : bool ( true if successful, false if empty )
      */
     bool tryPopFront(T& result) {
-        auto lock = std::unique_lock<std::mutex>(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         if (pendingQueue.empty()) {
             return false;
         }
@@ -122,7 +123,7 @@ public:
      * return : T ( copy of the last object, default-constructed if empty )
      */
     T popBack(){
-        auto lock = std::unique_lock<std::mutex>(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         if (pendingQueue.empty()) {
             return T{};
         }
@@ -136,18 +137,18 @@ public:
      * return : size_t ( size of the queue )
      */
     size_t size() const {
-        auto lock = std::unique_lock<std::mutex>(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         return pendingQueue.size();
     }
    // int size(int a);
      bool empty() const {
-        auto lock = std::unique_lock<std::mutex>(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         return pendingQueue.empty();
     }
     
     /* Clear all elements from the queue */
     void clear() {
-        auto lock = std::unique_lock<std::mutex>(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         pendingQueue.clear();
     }
    // bool empty(int a);

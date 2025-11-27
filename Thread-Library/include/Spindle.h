@@ -5,6 +5,7 @@
 #include <memory>
 #include <functional>
 #include <unordered_map>
+#include <atomic>
 #include "ThreadConfig.h"
 #include "Thread.h"
 #include "sys/mman.h"

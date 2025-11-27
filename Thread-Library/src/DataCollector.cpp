@@ -6,7 +6,39 @@ DataCollector::DataCollector(Config* configuration) {
 }
 
 ll DataCollector::difference(std::string total, std::string free){
-    return std::stoll(total.substr(14,10)) - std::stoll(free.substr(14,10));
+    try {
+        // More robust parsing: find the number after the colon
+        size_t totalPos = total.find(':');
+        size_t freePos = free.find(':');
+        
+        if (totalPos == std::string::npos || freePos == std::string::npos) {
+            return 0;
+        }
+        
+        // Skip whitespace after colon
+        totalPos = total.find_first_not_of(" \t", totalPos + 1);
+        freePos = free.find_first_not_of(" \t", freePos + 1);
+        
+        if (totalPos == std::string::npos || freePos == std::string::npos) {
+            return 0;
+        }
+        
+        // Find the end of the number (whitespace or end of string)
+        size_t totalEnd = total.find_first_of(" \t\n", totalPos);
+        size_t freeEnd = free.find_first_of(" \t\n", freePos);
+        
+        std::string totalStr = (totalEnd == std::string::npos) ? 
+            total.substr(totalPos) : total.substr(totalPos, totalEnd - totalPos);
+        std::string freeStr = (freeEnd == std::string::npos) ? 
+            free.substr(freePos) : free.substr(freePos, freeEnd - freePos);
+        
+        ll totalVal = std::stoll(totalStr);
+        ll freeVal = std::stoll(freeStr);
+        
+        return totalVal - freeVal;
+    } catch (const std::exception& e) {
+        return 0;
+    }
 }
 
 DataCollector::~DataCollector() {
@@ -24,13 +56,18 @@ bool DataCollector::captureRuntime (ll funcId, double runTime) {
 bool DataCollector::writeSnapshotToFile(){
     try {
         std::remove("../data/data.csv");
-        file.open("../data/data.csv");
+        file.open("../data/data.csv", std::ios::out | std::ios::trunc);
         if (!file.is_open()) {
             return false;
         }
+        
+        // Reserve string capacity for better performance
         std::string writeString;
+        writeString.reserve(256); // Reserve space for typical line
+        
         for (const ProcData& snapshot : snapshots) {
             if (snapshot.cpuUtilization.length() > 5) {
+                writeString.clear();
                 writeString = snapshot.cpuUtilization.substr(5);
                 std::replace(
                     writeString.begin(), 
@@ -62,7 +99,7 @@ bool DataCollector::writeSnapshotToFile(){
 }
 
 bool DataCollector::captureCPUSnapshot(){
-    auto lock = std::unique_lock<std::mutex>(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
     try {
         stat.open("/proc/stat");
         if (!stat.is_open()) {
@@ -70,17 +107,21 @@ bool DataCollector::captureCPUSnapshot(){
         }
         
         std::string readLine;
+        readLine.reserve(256); // Reserve capacity for better performance
         ProcData snapshot;
         int count = 2;  // Number of features to be read
         
         while( std::getline(stat,readLine) && count > 0 ) {
             if (readLine.length() < 3) continue;
             
-            if ( readLine.at(1) == 'p' && readLine.at(2) == 'u' && count > 1 ) {
+            // Match original behavior: check if 2nd char is 'p' and 3rd is 'u' (matches "cpu" lines)
+            // This handles both "cpu" and "cpu0", "cpu1", etc.
+            if (readLine.length() > 2 && readLine[1] == 'p' && readLine[2] == 'u' && count > 1) {
                 snapshot.cpuUtilization = readLine;
                 count--;
             }
-            else if (readLine.length() > 3 && readLine.at(2) == 'x' && readLine.at(3) == 't' ) {
+            // Match "ctxt" line (context switches)
+            else if (readLine.length() > 3 && readLine[2] == 'x' && readLine[3] == 't') {
                 snapshot.contextSwitches = readLine;                   
                 count--;
             }
@@ -96,27 +137,22 @@ bool DataCollector::captureCPUSnapshot(){
         while ( std::getline(stat,readLine) && count > 0 ) {
             if (readLine.length() < 5) continue;
             
-            if ( readLine.at(0) == 'S' && readLine.at(1) == 'w' ) {
-                if ( readLine.at(4) == 'T' ) {
-                    snapshot.swapTotal = readLine;
-                    count--;
-                }
-                else if ( readLine.at(4) == 'F' ) {
-                    snapshot.swapFree = readLine;
-                    count--;
-                }
+            // Use string comparison for better performance and readability
+            if (readLine.substr(0, 9) == "SwapTotal") {
+                snapshot.swapTotal = readLine;
+                count--;
             }
-            else if ( readLine.at(0) == 'M' && readLine.at(1) == 'e' ) {
-                if (readLine.length() > 3) {
-                    if ( readLine.at(3) == 'T' ) {
-                        snapshot.memTotal = readLine;
-                        count--;
-                    }
-                    else if ( readLine.at(3) == 'F' ) {
-                        snapshot.memFree = readLine;
-                        count--;
-                    }
-                }
+            else if (readLine.substr(0, 8) == "SwapFree") {
+                snapshot.swapFree = readLine;
+                count--;
+            }
+            else if (readLine.substr(0, 8) == "MemTotal") {
+                snapshot.memTotal = readLine;
+                count--;
+            }
+            else if (readLine.substr(0, 7) == "MemFree") {
+                snapshot.memFree = readLine;
+                count--;
             }
         }
         stat.close();
@@ -137,4 +173,36 @@ bool DataCollector::captureCPUSnapshot(){
 
 bool DataCollector::ifLog(){
     return config->getInstance().getRunningMode() == RUN_MODE::COLLECT_DATA;
+}
+
+bool DataCollector::writeToFile(){
+    // This method appears to be a placeholder - implement if needed
+    return writeSnapshotToFile();
+}
+
+bool DataCollector::writeRumTimeToFile(){
+    if (config->getInstance().getRunningMode() != RUN_MODE::COLLECT_DATA) {
+        return false;
+    }
+    
+    try {
+        std::ofstream runtimeFile("../data/runtime.csv", std::ios::out | std::ios::trunc);
+        if (!runtimeFile.is_open()) {
+            return false;
+        }
+        
+        // Write header
+        runtimeFile << "FunctionId,Runtime\n";
+        
+        for (const RuntimeData& data : runTimeData) {
+            runtimeFile << data.funcId << "," << data.runTime << "\n";
+        }
+        
+        runtimeFile.close();
+        return true;
+    } catch (const std::exception& e) {
+        return false;
+    } catch (...) {
+        return false;
+    }
 }
