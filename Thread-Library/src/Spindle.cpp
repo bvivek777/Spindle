@@ -1,6 +1,9 @@
 #include "../include/Spindle.h"
 #include <algorithm>
 #include <iostream>
+#include <thread>
+#include <chrono>
+#include <sstream>
 
 int Spindle::hwThreads = 0;
 int Spindle::currentThreads = 0;
@@ -8,32 +11,46 @@ std::atomic<ll> Spindle::processCounter(0);
 std::atomic<bool> Spindle::flag(false);
 
 Spindle::Spindle(Config* configuration) {
-    //std::cout<<"start - Spindle::Spindle()\n";
     config = configuration;
     hwThreads = std::thread::hardware_concurrency() - 1;
+    if (hwThreads <= 0) {
+        hwThreads = 1; // Ensure at least one thread
+    }
     functionThreadMapperCollection.clear();
     currentThreads = 0;
     processCounter = 0;
     flag = false;
-    //std::cout<<"end - Spindle::Spindle()\n";
 }
 
 Spindle::~Spindle() {
-    //std::cout<<"start - Spindle::~Spindle()\n";
-    bool condition = true;
-    threadPtr temp;
-    while ( flag || condition ) {
-        condition = false;
-        for(int i = currentThreads-1; i >= 0 && flag; i--){
-           temp = idThreadMap.find(i)->second;
-           condition = condition | temp->isPending();
+    // Wait for all pending work to complete
+    bool hasPending = true;
+    const int maxWaitIterations = 1000; // Prevent infinite loop
+    int iterations = 0;
+    
+    while (hasPending && iterations < maxWaitIterations) {
+        hasPending = false;
+        for(int i = 0; i < currentThreads; i++){
+            auto it = idThreadMap.find(i);
+            if (it != idThreadMap.end()) {
+                if (it->second->isPending()) {
+                    hasPending = true;
+                }
+            }
+        }
+        if (hasPending) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            iterations++;
         }
     }
-    for(int i = currentThreads-1; i >= 0; i--){
-        temp = idThreadMap.find(i)->second;
-        temp->wait();
+    
+    // Wait for threads to finish
+    for(int i = 0; i < currentThreads; i++){
+        auto it = idThreadMap.find(i);
+        if (it != idThreadMap.end()) {
+            it->second->wait();
+        }
     }
-    //std::cout<<"end - Spindle::~Spindle()\n";
 }
 
 Spindle& Spindle::getInstance(Config* configuration){
@@ -61,16 +78,33 @@ bool Spindle::init(int threads){
             functionThreadMapperCollection.clear();
             std::string mlData;
             std::getline(std::cin, mlData);
-            for (auto& c : mlData)
-            {
-                functionThreadMapperCollection.push_back(std::atoi(&c));
+            
+            // Parse ML data more robustly
+            if (!mlData.empty()) {
+                std::istringstream iss(mlData);
+                int value;
+                while (iss >> value) {
+                    functionThreadMapperCollection.push_back(value);
+                }
             }
-            int numThreads = *std::max_element(functionThreadMapperCollection.begin(), 
-                functionThreadMapperCollection.end());
-            //std::cout<<"ML Mode\n" << numThreads;
-            createThreads(numThreads);
+            
+            if (functionThreadMapperCollection.empty()) {
+                // Fallback to default if no ML data provided
+                functionThreadMapperCollection.resize(threads, 1);
+            }
+            
+            int numThreads = functionThreadMapperCollection.empty() ? 1 :
+                *std::max_element(functionThreadMapperCollection.begin(), 
+                    functionThreadMapperCollection.end());
+            
+            if (numThreads <= 0) {
+                numThreads = 1;
+            }
+            
+            if (!createThreads(numThreads)) {
+                return false;
+            }
             currentThreads = numThreads;
-            //std::cout<<"ML Mode Threads created\n";
         }
         break;
     case THREAD_MODE::CONSTANT:
@@ -117,41 +151,64 @@ bool Spindle::addProcess(void (*functPtr)()) {
 }
 
 bool Spindle::assignFCFS(void (*funcPtr)()){
-    //std::cout<<" start - Spindle::assignFCFS()\n";
-    if ( !flag ) {
-        //std::cout<<"Spindle::assignFCFS() - Call init first\n";
+    if ( !flag || currentThreads == 0 ) {
         return false;
     }
-    idThreadMap.at( ( processCounter % currentThreads ) )->addToQueue(funcPtr,processCounter);
+    if (funcPtr == nullptr) {
+        return false;
+    }
+    int threadIndex = processCounter % currentThreads;
+    auto it = idThreadMap.find(threadIndex);
+    if (it == idThreadMap.end()) {
+        return false;
+    }
+    it->second->addToQueue(funcPtr, processCounter);
     processCounter++;
-    //std::cout<<" end - Spindle::assginFCFS(), processCount : "<<processCounter<<"\n";
     return true;
 }
 
 bool Spindle::assignML(void (*funcPtr)())
 {
-    //std::cout<<" start - Spindle::assignML()"<<"\n";
     if ( !flag ) {
-        //std::cout<<"Spindle::assignML() - Call init first\n";
+        return false;
+    }
+    if (functionThreadMapperCollection.empty() || 
+        static_cast<size_t>(processCounter) >= functionThreadMapperCollection.size()) {
         return false;
     }
     int threadId = functionThreadMapperCollection[processCounter];
-    idThreadMap[threadId - 1]->addToQueue(funcPtr, threadId); 
+    if (threadId < 1 || threadId > currentThreads) {
+        return false;
+    }
+    auto it = idThreadMap.find(threadId - 1);
+    if (it == idThreadMap.end()) {
+        return false;
+    }
+    it->second->addToQueue(funcPtr, threadId); 
     processCounter++;
-    flag = true;
-    //std::cout<<" end - Spindle::assignML()"<<"\n";
     return true;
 }
 
 bool Spindle::createThreads(int threadC) {
-    //std::cout<<" start - Spindle::createThreads() threadCount = "<<threadC<<"\n";
+    if (threadC <= 0 || threadC > hwThreads) {
+        return false;
+    }
+    // Clear existing threads if any
+    idThreadMap.clear();
     currentThreads = threadC;
-    for(int i=0; i < threadC; i++){
-        auto p = std::make_shared<Thread>();
-        idThreadMap.insert({i,p});
+    
+    for(int i = 0; i < threadC; i++){
+        try {
+            auto p = std::make_shared<Thread>();
+            idThreadMap.insert({i, p});
+        } catch (const std::exception& e) {
+            // Cleanup on failure
+            idThreadMap.clear();
+            currentThreads = 0;
+            return false;
+        }
     }
     flag = true;
-    //std::cout<<" end - Spindle::createThreads()\n";
     return true;
 }
 
