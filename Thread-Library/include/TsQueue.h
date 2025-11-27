@@ -4,6 +4,8 @@
 #include <deque>
 #include <mutex>
 #include <functional>
+#include <utility>
+#include <algorithm>
 
 typedef long long int ll;
 
@@ -11,10 +13,35 @@ struct FunctionToId
 {
     void (*funcPtr)();
     ll id;
-    FunctionToId(){}
-    FunctionToId(void (*funcptr)(), ll id_a){
-        funcPtr = funcptr;
-        id = id_a;
+    
+    FunctionToId() : funcPtr(nullptr), id(0) {}
+    
+    FunctionToId(void (*funcptr)(), ll id_a) : funcPtr(funcptr), id(id_a) {}
+    
+    // Move constructor
+    FunctionToId(FunctionToId&& other) noexcept 
+        : funcPtr(other.funcPtr), id(other.id) {
+        other.funcPtr = nullptr;
+    }
+    
+    // Move assignment
+    FunctionToId& operator=(FunctionToId&& other) noexcept {
+        if (this != &other) {
+            funcPtr = other.funcPtr;
+            id = other.id;
+            other.funcPtr = nullptr;
+        }
+        return *this;
+    }
+    
+    // Copy constructor
+    FunctionToId(const FunctionToId& other) = default;
+    
+    // Copy assignment
+    FunctionToId& operator=(const FunctionToId& other) = default;
+    
+    bool isValid() const {
+        return funcPtr != nullptr;
     }
 };
 
@@ -26,7 +53,7 @@ template<typename T>
 class TsQueue {
 private:
     std::deque<T> pendingQueue;
-    std::mutex mutex;
+    mutable std::mutex mutex;
 public:
     /* Default Constructor */
     TsQueue(){};
@@ -35,9 +62,9 @@ public:
      * arg : reference of type <T>
      * return : int ( current queue size / current entered position )
      */
-    int pushFront(T &front){
+    int pushFront(const T &front){
         auto lock = std::unique_lock<std::mutex>(mutex);
-        pendingQueue.push_back(front);
+        pendingQueue.push_front(front);
         return pendingQueue.size(); 
     }
    // int pushFront(T &front, int a);
@@ -45,52 +72,83 @@ public:
      * arg : reference of type <T>
      * return : int ( current queue size / current entered position )
      */
-    int pushBack(T &front){
+    int pushBack(const T &front){
         auto lock = std::unique_lock<std::mutex>(mutex);
         pendingQueue.push_back(front);
         return pendingQueue.size(); 
     }
+    
+    /* Emplace to the back of the queue (more efficient for non-copyable types)
+     * arg : arguments to construct T
+     * return : int ( current queue size )
+     */
+    template<typename... Args>
+    int emplaceBack(Args&&... args) {
+        auto lock = std::unique_lock<std::mutex>(mutex);
+        pendingQueue.emplace_back(std::forward<Args>(args)...);
+        return pendingQueue.size();
+    }
    // int pushBack(T &front, int a);
     /* Deletes from the front of the queue
      * arg : NULL (doesn't take any arguments) 
-     * return : *T ( pointer to the first object )
+     * return : T ( copy of the first object, default-constructed if empty )
      */
     T popFront() {
         auto lock = std::unique_lock<std::mutex>(mutex);
-        T t;
-        if ( !pendingQueue.size() )
-            return t;
-        t = pendingQueue.front();
+        if (pendingQueue.empty()) {
+            return T{};
+        }
+        T t = std::move(pendingQueue.front());
         pendingQueue.pop_front();
         return t;
+    }
+    
+    /* Try to pop from front, returns false if empty
+     * arg : reference to T to store result
+     * return : bool ( true if successful, false if empty )
+     */
+    bool tryPopFront(T& result) {
+        auto lock = std::unique_lock<std::mutex>(mutex);
+        if (pendingQueue.empty()) {
+            return false;
+        }
+        result = std::move(pendingQueue.front());
+        pendingQueue.pop_front();
+        return true;
     }
    // T popFront(int a); 
     /* Deletes from the back of the queue
      * arg : NULL (doesn't take any arguments) 
-     * return : *T ( pointer to the last object )
+     * return : T ( copy of the last object, default-constructed if empty )
      */
     T popBack(){
         auto lock = std::unique_lock<std::mutex>(mutex);
-        T t;
-        if ( !pendingQueue.size() )
-            return t;
-        t = pendingQueue.back();
+        if (pendingQueue.empty()) {
+            return T{};
+        }
+        T t = std::move(pendingQueue.back());
         pendingQueue.pop_back();
         return t;
     }
    // T popBack(int a);
     /* Returns the total size of the queue 
      * arg : NULL (doesn't take any arguments) 
-     * return : int ( size of the queue )
+     * return : size_t ( size of the queue )
      */
-    int size(){
+    size_t size() const {
         auto lock = std::unique_lock<std::mutex>(mutex);
         return pendingQueue.size();
     }
    // int size(int a);
-    bool empty(){
+     bool empty() const {
         auto lock = std::unique_lock<std::mutex>(mutex);
         return pendingQueue.empty();
+    }
+    
+    /* Clear all elements from the queue */
+    void clear() {
+        auto lock = std::unique_lock<std::mutex>(mutex);
+        pendingQueue.clear();
     }
    // bool empty(int a);
     /* Deallocates and clears the queue */
