@@ -1,40 +1,50 @@
-# Install dependencies required
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "Do you eant to install all the dependencies (y/n)?"
-read value 
-if [ $value = "y" ]; then
-    sudo apt install python3
-    sudo apt install python3-pip
-    pip3 install sklearn
-    pip3 install pandas
-    sudo apt install cmake
-fi
+prompt_for_dependencies() {
+    local answer=""
+    while true; do
+        read -r -p "Install dependencies (y/n)? " answer
+        case "${answer,,}" in
+            y|yes)
+                echo "Installing dependencies (requires sudo)..."
+                sudo apt-get update
+                sudo apt-get install -y python3 python3-pip cmake
+                python3 -m pip install --user --upgrade pip
+                python3 -m pip install --user scikit-learn pandas
+                break
+                ;;
+            n|no)
+                echo "Skipping dependency installation."
+                break
+                ;;
+            *)
+                echo "Please answer with 'y' or 'n'."
+                ;;
+        esac
+    done
+}
 
-# Build Library
+prompt_for_dependencies
 
-echo "building library.."
+echo "Building library..."
+mkdir -p build
+cmake -S . -B build
+cmake --build build
 
-cd build
-cmake ..
-make
-
-# copy test file for ML code to parse
-
-cd ..
+echo "Preparing ML input sample..."
 cp Thread-Library/tests/main.cpp Ai/myfile.txt
 
-# Learn and cluster
-
-echo "Learning started .. "
-cd Ai
+echo "Learning started..."
+pushd Ai > /dev/null
 python3 Project_AI.py learn
-echo "Starting assiging thread to cluser .."
+echo "Assigning threads to clusters..."
 python3 Project_AI.py assign > threadOutput.txt
+popd > /dev/null
 
-# move result back to library as input and execute code
-
-echo "running tests .."
-cd ..
+echo "Running tests..."
+mkdir -p build/Thread-Library/tests
 mv Ai/threadOutput.txt build/Thread-Library/tests/
-cd build/Thread-Library/tests
+pushd build/Thread-Library/tests > /dev/null
 ./spindleTest < threadOutput.txt
+popd > /dev/null

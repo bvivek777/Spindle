@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
 
+import json
+import math
+import random
+import re
+import sys
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
-import re
-import pickle
-import math
-import random
-import sys
 
 DEBUG = False
 weights = [2000,630,218,163,1245]
+MODEL_FILE = Path(__file__).resolve().parent / "modelAi.json"
+FEATURE_COLUMNS = ['network','io','mem','math','db','time']
 
 def readFile(fp):
     f = open(fp, "r")
@@ -65,11 +69,8 @@ def clusterAndLearn(df):
     
     lookup = table['time'].values.tolist()
     lookup = list(map(lambda x: round(x, 2), lookup))
-    pickle.dump(clusterer, open('modelAi.model', 'wb'))
-    pickle.dump(lookup, open('modelAiTable.table', 'wb'))
-    #loaded_model = pickle.load(open(filename, 'rb'))
     
-    return lookup
+    return clusterer, lookup
 
 def learnModel(fp):
     data = readFile(fp)
@@ -77,7 +78,8 @@ def learnModel(fp):
     df = dataFinal.sample(frac = 0.01, replace = False, random_state = 29)
     df = df.reset_index(drop=True)
     #print(df)
-    table = clusterAndLearn(df)
+    clusterer, lookup = clusterAndLearn(df)
+    saveModel(clusterer, lookup)
     
 def probabilityFunction(x):
     return math.exp(-x/4)
@@ -120,25 +122,52 @@ def ThreadAssignment(cluster_list, run_time_list):
 
     return(final_thread_assignment_list)
 
-def clusterLoad():
-    clusterer = pickle.load(open('modelAi.model', 'rb'))
-    lookup = pickle.load(open('modelAiTable.table', 'rb'))
-    return clusterer, lookup
+def saveModel(clusterer, lookup):
+    payload = {
+        "cluster_centers": clusterer.cluster_centers_.tolist(),
+        "lookup": lookup,
+        "features": FEATURE_COLUMNS,
+        "n_clusters": int(clusterer.n_clusters)
+    }
+    MODEL_FILE.write_text(json.dumps(payload), encoding="utf-8")
+
+def loadModel():
+    try:
+        payload = json.loads(MODEL_FILE.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise RuntimeError("Model file missing. Run 'learn' first.") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Model file is corrupted.") from exc
+
+    centers = np.array(payload.get("cluster_centers"), dtype=float)
+    lookup = payload.get("lookup")
+    features = payload.get("features", [])
+    if centers.ndim != 2 or centers.shape[1] != len(FEATURE_COLUMNS):
+        raise RuntimeError("Model centers have unexpected shape.")
+    if not isinstance(lookup, list) or len(lookup) != centers.shape[0]:
+        raise RuntimeError("Model lookup table is invalid.")
+    if features != FEATURE_COLUMNS:
+        raise RuntimeError("Model features mismatch current version.")
+    return centers, lookup
+
+def predictWithCenters(df, centers):
+    feature_matrix = df[FEATURE_COLUMNS].to_numpy(dtype=float)
+    # Calculate Euclidean distance to each center
+    distances = np.linalg.norm(
+        feature_matrix[:, np.newaxis, :] - centers[np.newaxis, :, :],
+        axis=2
+    )
+    return np.argmin(distances, axis=1)
 
 def makeAssignment(fp):
-    clusterer, lookup = clusterLoad()
+    centers, lookup = loadModel()
     
     data = readFile(fp)
     df = readData(data)
-    #print(df);
-    #df = dataFinal.sample(n=9, replace = False, random_state = 1)
-    #df = df.reset_index(drop=True)
     
-    assignment = clusterer.predict(df)
-    #print(assignment)
-    #print(lookup)
+    assignment = predictWithCenters(df, centers)
     
-    threadAssignment = ThreadAssignment(assignment, lookup)
+    threadAssignment = ThreadAssignment(assignment.tolist(), lookup)
     print(threadAssignment)
     
 

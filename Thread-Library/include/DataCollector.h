@@ -1,10 +1,11 @@
 #ifndef __DATA_COLLECTOR__
 #define __DATA_COLLECTOR__
 
-#include <mutex>
-#include <fstream>
-#include <vector>
 #include <algorithm>
+#include <fstream>
+#include <mutex>
+#include <string>
+#include <vector>
 #include "ThreadConfig.h"
 
 typedef long long ll;

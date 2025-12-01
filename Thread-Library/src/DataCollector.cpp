@@ -1,5 +1,59 @@
 #include "../include/DataCollector.h"
+#include <filesystem>
 #include <string>
+#include <cstdlib>
+
+namespace {
+std::filesystem::path resolveDataDirectory() {
+    const char* overrideDir = std::getenv("SPINDLE_DATA_DIR");
+    std::filesystem::path requested = (overrideDir && *overrideDir) ? overrideDir : "../data";
+    std::error_code ec;
+    std::filesystem::path absolutePath = std::filesystem::absolute(requested, ec);
+    if (absolutePath.empty()) {
+        absolutePath = requested;
+    }
+    std::filesystem::create_directories(absolutePath, ec);
+    auto canonicalPath = std::filesystem::weakly_canonical(absolutePath, ec);
+    if (!ec) {
+        return canonicalPath;
+    }
+    return absolutePath;
+}
+
+const std::filesystem::path& dataDirectory() {
+    static const std::filesystem::path dir = resolveDataDirectory();
+    return dir;
+}
+
+std::filesystem::path dataPathFor(const std::string& fileName) {
+    return dataDirectory() / fileName;
+}
+
+std::filesystem::path tempPathFor(const std::filesystem::path& path) {
+    std::filesystem::path tmp = path;
+    tmp += ".tmp";
+    return tmp;
+}
+
+bool ensureSafeTarget(const std::filesystem::path& target) {
+    std::error_code ec;
+    auto status = std::filesystem::symlink_status(target, ec);
+    if (ec) {
+        return false;
+    }
+    if (status.type() == std::filesystem::file_type::symlink) {
+        return false;
+    }
+    auto parent = target.parent_path();
+    if (!parent.empty()) {
+        auto parentStatus = std::filesystem::symlink_status(parent, ec);
+        if (ec || parentStatus.type() != std::filesystem::file_type::directory) {
+            return false;
+        }
+    }
+    return true;
+}
+}
 
 DataCollector::DataCollector(Config* configuration) {
     config = configuration;
@@ -54,16 +108,22 @@ bool DataCollector::captureRuntime (ll funcId, double runTime) {
 }
 
 bool DataCollector::writeSnapshotToFile(){
+    std::lock_guard<std::mutex> lock(mutex);
+    const auto dataPath = dataPathFor("data.csv");
+    const auto tempPath = tempPathFor(dataPath);
+
+    if (!ensureSafeTarget(dataPath)) {
+        return false;
+    }
+
     try {
-        std::remove("../data/data.csv");
-        file.open("../data/data.csv", std::ios::out | std::ios::trunc);
+        file.open(tempPath, std::ios::out | std::ios::trunc);
         if (!file.is_open()) {
             return false;
         }
         
-        // Reserve string capacity for better performance
         std::string writeString;
-        writeString.reserve(256); // Reserve space for typical line
+        writeString.reserve(256);
         
         for (const ProcData& snapshot : snapshots) {
             if (snapshot.cpuUtilization.length() > 5) {
@@ -84,16 +144,14 @@ bool DataCollector::writeSnapshotToFile(){
             }
         }
         file.close();
+        std::filesystem::rename(tempPath, dataPath);
         return true;
-    } catch (const std::exception& e) {
-        if (file.is_open()) {
-            file.close();
-        }
-        return false;
     } catch (...) {
         if (file.is_open()) {
             file.close();
         }
+        std::error_code ec;
+        std::filesystem::remove(tempPath, ec);
         return false;
     }
 }
@@ -185,13 +243,20 @@ bool DataCollector::writeRumTimeToFile(){
         return false;
     }
     
+    std::lock_guard<std::mutex> lock(mutex);
+    const auto runtimePath = dataPathFor("runtime.csv");
+    const auto tempPath = tempPathFor(runtimePath);
+
+    if (!ensureSafeTarget(runtimePath)) {
+        return false;
+    }
+    
     try {
-        std::ofstream runtimeFile("../data/runtime.csv", std::ios::out | std::ios::trunc);
+        std::ofstream runtimeFile(tempPath, std::ios::out | std::ios::trunc);
         if (!runtimeFile.is_open()) {
             return false;
         }
         
-        // Write header
         runtimeFile << "FunctionId,Runtime\n";
         
         for (const RuntimeData& data : runTimeData) {
@@ -199,10 +264,11 @@ bool DataCollector::writeRumTimeToFile(){
         }
         
         runtimeFile.close();
+        std::filesystem::rename(tempPath, runtimePath);
         return true;
-    } catch (const std::exception& e) {
-        return false;
     } catch (...) {
+        std::error_code ec;
+        std::filesystem::remove(tempPath, ec);
         return false;
     }
 }
