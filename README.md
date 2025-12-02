@@ -1,5 +1,15 @@
 # Spindle
-A ML based thread spawning library ( primarily done as a project )
+A machine-learning-based thread spawning library built as a project exploration.
 
-make the run.sh file executable by changing mode by using <code>chmod 777 run.sh</code><br>
-then run the run script with <code>./run.sh</code>
+## Quick start
+1. Make the run script executable: `chmod +x run.sh`
+2. Launch the pipeline: `./run.sh`
+
+## Repository layout
+- `Ai/` – simple generators and experiments that feed the main library.
+- `Thread-Library/` – core C++ thread primitives and tests.
+- `run.sh` – convenience entry point that wires the pieces together.
+
+## Notes
+- Replace the placeholder routines in `Ai/` with your own models.
+- Update `Thread-Library/` if you need different synchronization semantics.
