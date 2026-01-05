@@ -8,11 +8,7 @@ Thread::Thread() {
 }
 
 Thread::~Thread(){   
-    inScope = false;
-    queueConditionVariable.notify_all(); // Wake up waiting thread
-    if (thread.joinable()) {
-        thread.join();
-    }
+    wait();
     delete processPool;
 }
 
@@ -21,16 +17,18 @@ bool Thread::addToQueue(void (*funcPtr)(), ll processId) {
         return false;
     }
     FunctionToId funcId(funcPtr, processId);
-    processPool->pushBack(funcId);
-    queueConditionVariable.notify_one(); // Use notify_one instead of notify_all for better performance
+    
+    {
+        std::lock_guard<std::mutex> lock(queueMutex);
+        processPool->pushBack(funcId);
+    }
+    queueConditionVariable.notify_one();
     return true;
 }
 
 void Thread::processAssignedWork() {
     thread = std::thread([this] {
         FunctionToId func;
-        std::chrono::high_resolution_clock::time_point startTime, endTime;
-        std::chrono::duration<double> runtime;
         
         while( inScope ) {
             // Use condition variable to avoid busy waiting
@@ -51,10 +49,7 @@ void Thread::processAssignedWork() {
             // Only process if we got a valid function
             if (func.isValid()) {
                 try {
-                    startTime = std::chrono::high_resolution_clock::now();
                     (func.funcPtr)();
-                    endTime = std::chrono::high_resolution_clock::now();
-                    runtime = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
                 }
                 catch(const std::exception& e) {
                     std::cerr << "Exception in thread execution: " << e.what() << '\n';
@@ -66,7 +61,10 @@ void Thread::processAssignedWork() {
 
 bool Thread::wait() {
     // Set flag to stop accepting new work
-    inScope = false;
+    {
+        std::lock_guard<std::mutex> lock(queueMutex);
+        inScope = false;
+    }
     queueConditionVariable.notify_all(); // Wake up thread to exit
     
     // Wait for thread to finish

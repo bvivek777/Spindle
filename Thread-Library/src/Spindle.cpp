@@ -12,9 +12,9 @@ std::atomic<bool> Spindle::flag(false);
 
 Spindle::Spindle(Config* configuration) {
     config = configuration;
-    hwThreads = std::thread::hardware_concurrency() - 1;
-    if (hwThreads <= 0) {
-        hwThreads = 1; // Ensure at least one thread
+    hwThreads = std::thread::hardware_concurrency();
+    if (hwThreads == 0) {
+        hwThreads = 2; // Default if hardware_concurrency not available
     }
     functionThreadMapperCollection.clear();
     currentThreads = 0;
