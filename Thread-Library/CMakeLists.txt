@@ -9,6 +9,9 @@ file(GLOB SOURCES src/*.cpp)
 
 add_library(SpindleLib STATIC ${SOURCES})
 
+# Add tests subdirectory
+add_subdirectory(tests)
+
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 
